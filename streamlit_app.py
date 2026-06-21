@@ -54,7 +54,7 @@ if "edit_evento" not in st.session_state:
 # --- MENU LATERALE ---
 menu = st.sidebar.radio("Navigazione", [
     "🔵 Calendario Allenamenti",
-    "🟢 Calendario Partite", 
+    "🟢 Calendario e Convocazioni", 
     "📊 Statistiche Allenamenti",
     "🏆 Statistiche Partite",
     "⏱️ Planner Allenamento",
@@ -153,8 +153,8 @@ if menu == "🔵 Calendario Allenamenti":
 # ==========================================
 # SCHERMATA 2: PARTITE E DISTINTA UFFICIALE
 # ==========================================
-elif menu == "🟢 Calendario Partite":
-    st.header("🟢 Calendario e Convocazioni Partite")
+elif menu == "🟢 Calendario e Convocazioni":
+    st.header("🟢 Calendario e Convocazioni")
     
     st.subheader("Le tue Gare:")
     eventi_partita = [ev for ev in st.session_state.db["eventi"] if ev["tipo"] in ["Partita", "Torneo"]]
@@ -239,12 +239,10 @@ elif menu == "🟢 Calendario Partite":
                         if c_mark == "X":
                             convocati_list.append(ragazzo)
                             
-                        # Questa riga è scritta tutta di seguito senza spazi iniziali per evitare l'effetto "codice nero"
                         righe_giocatori += f"<tr><td style='border: 1px solid black; padding: 5px;'>{idx+1}</td><td style='border: 1px solid black; padding: 5px; text-align: left;'>{ragazzo}</td><td style='border: 1px solid black; padding: 5px; color: green; font-weight: bold;'>{c_mark}</td><td style='border: 1px solid black; padding: 5px; color: red; font-weight: bold;'>{nc_mark}</td></tr>"
                     
                     logo_immagine = get_logo_html()
                     
-                    # Anche questa variabile è scritta senza spazi per impedire a Streamlit di impazzire
                     html_distinta = f"""<div style='background-color: white; color: black; padding: 10px; font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
 <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black;'>
 <tr>
@@ -307,7 +305,7 @@ elif menu == "🟢 Calendario Partite":
                                     if "Convocato" in stato and "Non" not in stato:
                                         min_prec = minutaggio_evento.get(ragazzo, 0)
                                         minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
-                                        resoconto_minuti[ragazzo] = minuti
+                                        resoconto_minuti[ragazzo] = minutes = minuti
                                     else:
                                         resoconto_minuti[ragazzo] = 0
                                         st.write("") 

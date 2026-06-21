@@ -224,8 +224,8 @@ elif menu == "🟢 Calendario e Convocazioni":
                     appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
                     minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
                     
-                    sq_casa = "USO UNITED 2014" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
-                    sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED 2014"
+                    sq_casa = "USO UNITED" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
+                    sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED"
                     ind_campo = ev.get("indirizzo", "Campo di Casa") if ev.get("luogo", "Casa") == "Trasferta" else "Campo di Casa"
                     
                     righe_giocatori = ""
@@ -247,7 +247,7 @@ elif menu == "🟢 Calendario e Convocazioni":
 <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black;'>
 <tr>
 <td rowspan='6' style='width: 30%; border: 1px solid black; vertical-align: middle; padding: 10px;'>{logo_immagine}</td>
-<td style='border: 1px solid black; color: #4CAF50; font-weight: bold; font-size: 20px; padding: 5px;'>USO UNITED 2014</td>
+<td style='border: 1px solid black; color: #4CAF50; font-weight: bold; font-size: 20px; padding: 5px;'>USO UNITED</td>
 </tr>
 <tr><td style='border: 1px solid black; font-weight: bold; font-size: 16px; padding: 5px;'>CONVOCAZIONI</td></tr>
 <tr><td style='border: 1px solid black; padding: 5px;'>PARTITA: {sq_casa} vs {sq_trasf}</td></tr>
@@ -270,7 +270,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     # Generazione testo WhatsApp con saluto iniziale e note
                     whatsapp_text = f"Ciao a tutti,\n\n"
                     whatsapp_text += f"⚽ *CONVOCAZIONI* ⚽\n"
-                    whatsapp_text += f"⚽ *Partita:* {sq_casa} vs {sq_trasf}\n"
+                    whatsapp_text += f"⚽ *Partita:*{sq_casa}vs{sq_trasf}\n"
                     whatsapp_text += f"📅 *Data:* {data_f}\n"
                     whatsapp_text += f"⏰ *Ora Partita:* {ev.get('ora_partita', '___')}\n"
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
@@ -477,6 +477,9 @@ elif menu == "🏃 Gestione Rosa":
     if not st.session_state.db["ragazzi"]: 
         st.warning("La rosa è vuota!")
     else:
+        id_allenamenti = [ev["id"] for ev in st.session_state.db["eventi"] if ev["tipo"] == "Allenamento"]
+        totale_allenamenti = sum(1 for ev_id in st.session_state.db["storico_presenze"] if ev_id in id_allenamenti)
+        
         for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
             if st.session_state.edit_mode == i:
                 col_input, col_salva, col_annulla = st.columns([2, 1, 1])
@@ -502,7 +505,15 @@ elif menu == "🏃 Gestione Rosa":
                 col_nome, col_modifica, col_cancella = st.columns([2.5, 1, 1])
                 with col_nome: 
                     min_tot_anagrafica = sum(st.session_state.db["storico_minutaggio"].get(ev_id, {}).get(ragazzo, 0) for ev_id in st.session_state.db["storico_minutaggio"])
-                    st.write(f"• **{ragazzo}** *(⏱️ {min_tot_anagrafica}' totali)*")
+                    
+                    presenti = 0
+                    for ev_id, appello in st.session_state.db["storico_presenze"].items():
+                        if ev_id in id_allenamenti:
+                            if "Presente" in appello.get(ragazzo, ""):
+                                presenti += 1
+                    pct_allenamenti = (presenti / totale_allenamenti) * 100 if totale_allenamenti > 0 else 0.00
+                    
+                    st.write(f"• **{ragazzo}** *(⏱️ {min_tot_anagrafica}' totali | 📈 {pct_allenamenti:.2f}% presenze All.)*")
                 with col_modifica:
                     if st.button("✏️ Modifica", key=f"edit_btn_{i}"):
                         st.session_state.edit_mode = i

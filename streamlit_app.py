@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 import base64
+import streamlit.components.v1 as components
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
@@ -93,6 +94,30 @@ menu = st.sidebar.radio("Navigazione", [
 
 st.sidebar.write("---")
 st.sidebar.info("MisterApp Cloud - Attiva")
+
+# --- TRUCCO PER CHIUDERE IL MENU SU SMARTPHONE ---
+if "last_menu" not in st.session_state:
+    st.session_state.last_menu = menu
+
+if st.session_state.last_menu != menu:
+    st.session_state.last_menu = menu
+    components.html(
+        """
+        <script>
+        // Controlla se la larghezza dello schermo è da smartphone
+        if (window.parent.innerWidth <= 768) {
+            var closeBtn = window.parent.document.querySelector('[data-testid="stSidebarCollapseButton"]');
+            if (!closeBtn) {
+                closeBtn = window.parent.document.querySelector('[data-testid="stSidebar"] button');
+            }
+            if (closeBtn) {
+                closeBtn.click();
+            }
+        }
+        </script>
+        """,
+        height=0, width=0
+    )
 
 # ==========================================
 # SCHERMATA 1: ALLENAMENTI

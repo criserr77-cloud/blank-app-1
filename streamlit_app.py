@@ -267,13 +267,20 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
+                    # Generazione testo WhatsApp con le Note
                     whatsapp_text = f"🟢 *CONVOCAZIONI USO UNITED 2014* 🟢\n"
                     whatsapp_text += f"⚽ *Partita:* {sq_casa} vs {sq_trasf}\n"
                     whatsapp_text += f"📅 *Data:* {data_f}\n"
                     whatsapp_text += f"⏰ *Ora Partita:* {ev.get('ora_partita', '___')}\n"
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
-                    whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n\n"
-                    whatsapp_text += f"*ELENCO CONVOCATI:*\n"
+                    whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
+                    
+                    # Aggiunta dinamica delle Note se presenti
+                    nota_p = ev.get("nota", "").strip()
+                    if nota_p:
+                        whatsapp_text += f"📝 *Note:* {nota_p}\n"
+                        
+                    whatsapp_text += f"\n*ELENCO CONVOCATI:*\n"
                     if convocati_list:
                         for c in convocati_list:
                             whatsapp_text += f"✅ {c}\n"
@@ -305,7 +312,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                                     if "Convocato" in stato and "Non" not in stato:
                                         min_prec = minutaggio_evento.get(ragazzo, 0)
                                         minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
-                                        resoconto_minuti[ragazzo] = minutes = minuti
+                                        resoconto_minuti[ragazzo] = minuti
                                     else:
                                         resoconto_minuti[ragazzo] = 0
                                         st.write("") 

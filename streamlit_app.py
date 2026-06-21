@@ -22,7 +22,7 @@ def caricare_dati():
             "ragazzi": ["Luca R.", "Matteo V.", "Alessandro M.", "Filippo T.", "Gabriele L.", "Tommaso N."],
             "eventi": [
                 {"id": "1", "data": "2026-06-23", "tipo": "Allenamento", "nota": "Campo Principale - ore 17:30"},
-                {"id": "2", "data": "2026-06-27", "tipo": "Partita", "avversario": "Real City", "luogo": "Casa", "ora_partita": "15:00", "ora_convocazione": "14:00", "nota": "Campionato"}
+                {"id": "2", "data": "2026-06-27", "tipo": "Partita", "avversario": "Real City", "luogo": "Trasferta", "ora_partita": "15:00", "ora_convocazione": "14:00", "indirizzo": "Via Stadio 5, Torino", "nota": "Campionato"}
             ],
             "storico_presenze": {},
             "storico_minutaggio": {}
@@ -139,7 +139,7 @@ if menu == "🔵 Calendario Allenamenti":
     nuova_nota = st.text_input("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
     if st.button("Aggiungi Allenamento"):
         nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
-        st.session_state.db["eventi"].append({"id": nuovo_id, "data": str(nuova_data), "tipo": "Allenamento", "nota": nuova_nota})
+        st.session_state.db["eventi"].append({"id": புதிய_id, "data": str(nuova_data), "tipo": "Allenamento", "nota": nuova_nota})
         salvare_dati()
         st.rerun()
 
@@ -147,7 +147,7 @@ if menu == "🔵 Calendario Allenamenti":
 # SCHERMATA 2: PARTITE
 # ==========================================
 elif menu == "🟢 Calendario Partite":
-    st.header("🟢 Calendario e Convocazioni Partite")
+    st.header("🟢 Calendario e Convocazioni Partites")
     
     st.subheader("Le tue Gare:")
     eventi_partita = [ev for ev in st.session_state.db["eventi"] if ev["tipo"] in ["Partita", "Torneo"]]
@@ -165,6 +165,11 @@ elif menu == "🟢 Calendario Partite":
                     mod_data = st.date_input("Data", curr_date, key=f"mod_dp_{ev['id']}")
                     mod_avv = st.text_input("Avversario", value=ev.get("avversario", ""), key=f"mod_avv_{ev['id']}")
                     mod_luogo = st.selectbox("Luogo", ["Casa", "Trasferta"], index=0 if ev.get("luogo", "Casa")=="Casa" else 1, key=f"mod_lu_{ev['id']}")
+                    
+                    if mod_luogo == "Trasferta":
+                        mod_indirizzo = st.text_input("Indirizzo del campo", value=ev.get("indirizzo", ""), key=f"mod_ind_{ev['id']}")
+                    else:
+                        mod_indirizzo = ""
                 with col2:
                     mod_orap = st.text_input("Ora Partita (es. 15:00)", value=ev.get("ora_partita", ""), key=f"mod_op_{ev['id']}")
                     mod_orac = st.text_input("Ora Convocazione (es. 14:00)", value=ev.get("ora_convocazione", ""), key=f"mod_oc_{ev['id']}")
@@ -176,6 +181,7 @@ elif menu == "🟢 Calendario Partite":
                         ev["data"] = str(mod_data)
                         ev["avversario"] = mod_avv
                         ev["luogo"] = mod_luogo
+                        ev["indirizzo"] = mod_indirizzo
                         ev["ora_partita"] = mod_orap
                         ev["ora_convocazione"] = mod_orac
                         ev["nota"] = mod_nota
@@ -212,6 +218,12 @@ elif menu == "🟢 Calendario Partite":
                     sq_casa = "USO UNITED 2014" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
                     sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED 2014"
                     
+                    # Se è in trasferta, prepariamo la riga HTML dell'indirizzo
+                    indirizzo_html = ""
+                    if ev.get("luogo", "Casa") == "Trasferta":
+                        ind_campo = ev.get("indirizzo", "Non specificato")
+                        indirizzo_html = f"<p style='font-size: 18px; margin: 5px 0; color: #d32f2f;'><strong>INDIRIZZO CAMPO:</strong> {ind_campo}</p>"
+                    
                     st.markdown(f"""
                     <div style='text-align: center; border: 2px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px; background-color: #f9f9f9; color: #333;'>
                         <h2 style='color: #4CAF50; margin: 0; font-family: Arial, sans-serif;'>USO UNITED 2014</h2>
@@ -220,6 +232,7 @@ elif menu == "🟢 Calendario Partite":
                         <p style='font-size: 18px; margin: 5px 0;'><strong>DATA:</strong> {data_f}</p>
                         <p style='font-size: 18px; margin: 5px 0;'><strong>ORA PARTITA:</strong> {ev.get("ora_partita", "___")}</p>
                         <p style='font-size: 18px; margin: 5px 0;'><strong>ORA CONVOCAZIONE:</strong> {ev.get("ora_convocazione", "___")}</p>
+                        {indirizzo_html}
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -266,6 +279,12 @@ elif menu == "🟢 Calendario Partite":
         nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_p")
         nuovo_avversario = st.text_input("Avversario (es. Real City)", key="new_avv")
         nuovo_luogo = st.selectbox("Dove si gioca?", ["Casa", "Trasferta"], key="new_luogo")
+        
+        # Mostra l'inserimento dell'indirizzo solo se è Trasferta
+        if nuovo_luogo == "Trasferta":
+            nuovo_indirizzo = st.text_input("Indirizzo del campo (es. Via Roma 10, Milano)", key="new_indirizzo")
+        else:
+            nuovo_indirizzo = ""
     with col2:
         nuova_orap = st.text_input("Ora Partita (es. 15:00)", key="new_orap")
         nuova_orac = st.text_input("Ora Convocazione (es. 14:00)", key="new_orac")
@@ -279,7 +298,8 @@ elif menu == "🟢 Calendario Partite":
             st.session_state.db["eventi"].append({
                 "id": nuovo_id, "data": str(nuova_data), "tipo": "Partita", 
                 "avversario": nuovo_avversario, "luogo": nuovo_luogo, 
-                "ora_partita": nuova_orap, "ora_convocazione": nuova_orac, "nota": nuova_nota
+                "ora_partita": nuova_orap, "ora_convocazione": nuova_orac, 
+                "indirizzo": nuovo_indirizzo, "nota": nuova_nota
             })
             salvare_dati()
             st.rerun()
@@ -434,3 +454,4 @@ elif menu == "🏃 Gestione Rosa":
             salvare_dati()
             st.success(f"⚽ {nuovo_nome_ins.strip()} aggiunto alla rosa!")
             st.rerun()
+            

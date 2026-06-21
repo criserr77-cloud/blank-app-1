@@ -7,57 +7,29 @@ import base64
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp", layout="centered")
 
-# --- CSS PERSONALIZZATO PER LOOK "MOBILE APP" ---
+# --- CSS PER LOOK MOBILE ---
 st.markdown("""
     <style>
-    /* Sfondo globale */
     .stApp { background-color: #f0f2f6; }
-    
-    /* Card design */
-    .card {
-        background-color: white;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-    
-    /* Titoli più eleganti */
-    h1, h2, h3 { color: #1e3d59; font-family: sans-serif; }
-    
-    /* Bottoni stile moderno */
-    div.stButton > button {
-        border-radius: 20px;
-        border: none;
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 20px;
-        transition: 0.3s;
-    }
-    div.stButton > button:hover { background-color: #45a049; }
+    .card { background-color: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h1, h2, h3 { color: #1e3d59; }
+    div.stButton > button { border-radius: 20px; background-color: #4CAF50; color: white; border: none; padding: 10px 20px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- FILE DI SALVATAGGIO (DATABASE LOCALE) ---
+# --- FILE DI SALVATAGGIO ---
 DB_FILE = "misterapp_db.json"
 
 def caricare_dati():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r", encoding="utf-8") as f:
-            dati = json.load(f)
-            if "storico_minutaggio" not in dati:
-                dati["storico_minutaggio"] = {}
-            return dati
-    else:
-        return {
-            "ragazzi": ["Luca R.", "Matteo V.", "Alessandro M.", "Filippo T.", "Gabriele L.", "Tommaso N."],
-            "eventi": [
-                {"id": "1", "data": "2026-06-23", "tipo": "Allenamento", "nota": "Campo Principale - ore 17:30"},
-                {"id": "2", "data": "2026-06-27", "tipo": "Partita", "avversario": "Real City", "luogo": "Trasferta", "ora_partita": "15:00", "ora_convocazione": "14:00", "indirizzo": "Via Stadio 5, Torino", "nota": "Campionato"}
-            ],
-            "storico_presenze": {},
-            "storico_minutaggio": {}
-        }
+            return json.load(f)
+    return {
+        "ragazzi": ["Luca R.", "Matteo V.", "Alessandro M.", "Filippo T.", "Gabriele L.", "Tommaso N."],
+        "eventi": [],
+        "storico_presenze": {},
+        "storico_minutaggio": {}
+    }
 
 def salvare_dati():
     with open(DB_FILE, "w", encoding="utf-8") as f:
@@ -71,90 +43,72 @@ def get_logo_html():
                 return f"<img src='data:image/{ext};base64,{encoded}' style='max-width: 80px; max-height: 80px; object-fit: contain;'>"
     return "<div style='font-size: 40px;'>🛡️</div>"
 
-# Inizializziamo lo stato di Streamlit
-if "db" not in st.session_state:
-    st.session_state.db = caricare_dati()
-    if "storico_minutaggio" not in st.session_state.db:
-        st.session_state.db["storico_minutaggio"] = {}
+if "db" not in st.session_state: st.session_state.db = caricare_dati()
 
-if "edit_mode" not in st.session_state:
-    st.session_state.edit_mode = None
-if "edit_evento" not in st.session_state:
-    st.session_state.edit_evento = None
-
-# --- MENU LATERALE ---
-menu = st.sidebar.radio("Navigazione", [
-    "🔵 Allenamenti",
-    "🟢 Partite e Convocazioni", 
-    "📊 Statistiche",
-    "⏱️ Planner",
-    "🏃 Gestione Rosa"
-])
-
-st.sidebar.markdown("---")
-st.sidebar.info("MisterApp Mobile Ready ⚽")
+# --- MENU ---
+menu = st.sidebar.radio("Navigazione", ["🔵 Allenamenti", "🟢 Calendario e Convocazioni", "📊 Statistiche", "⏱️ Planner", "🏃 Gestione Rosa"])
 
 # ==========================================
 # SCHERMATA: ALLENAMENTI
 # ==========================================
 if menu == "🔵 Allenamenti":
     st.header("🔵 Allenamenti")
-    
-    with st.container():
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("I tuoi Allenamenti:")
-        eventi_allenamento = [ev for ev in st.session_state.db["eventi"] if ev["tipo"] == "Allenamento"]
-        
-        if not eventi_allenamento:
-            st.info("Nessun allenamento in programma.")
-        else:
-            for ev in eventi_allenamento:
-                data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
-                with st.expander(f"🔵 {data_f} - {ev.get('nota', '')}"):
-                    # Inserimento presenze qui...
-                    appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
-                    resoconto_corrente = {}
-                    opzioni = ["🟢 Presente", "🔴 Assente", "🟡 Infortunato"]
-                    
-                    for ragazzo in st.session_state.db["ragazzi"]:
-                        col1, col2 = st.columns([1, 2])
-                        with col1: st.write(f"**{ragazzo}**")
-                        with col2:
-                            stato_precedente = appello_evento.get(ragazzo, opzioni[0])
-                            indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
-                            resoconto_corrente[ragazzo] = st.radio(f"p_{ragazzo}_{ev['id']}", opzioni, index=indice_default, horizontal=True, label_visibility="collapsed")
-                    
-                    if st.button("💾 Salva Presenze", key=f"btn_salva_{ev['id']}"):
-                        st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
-                        salvare_dati()
-                        st.success("Salvataggio riuscito!")
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    eventi_allenamento = [ev for ev in st.session_state.db["eventi"] if ev["tipo"] == "Allenamento"]
+    if not eventi_allenamento: st.info("Nessun allenamento.")
+    else:
+        for ev in eventi_allenamento:
+            with st.expander(f"Allenamento del {ev['data']}"):
+                st.write(ev.get('nota', ''))
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
-# SCHERMATA: PARTITE
+# SCHERMATA: PARTITE (LOGICA COMPLETA)
 # ==========================================
-elif menu == "🟢 Partite e Convocazioni":
-    st.header("🟢 Partite e Convocazioni")
+elif menu == "🟢 Calendario e Convocazioni":
+    st.header("🟢 Calendario e Convocazioni")
     eventi_partita = [ev for ev in st.session_state.db["eventi"] if ev["tipo"] in ["Partita", "Torneo"]]
     
     for ev in eventi_partita:
-        data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
-        with st.container():
-            st.markdown("<div class='card'>", unsafe_allow_html=True)
-            with st.expander(f"🟢 {ev.get('avversario')} ({data_f})"):
-                # Qui logica completa del modulo (omessa per brevità ma inclusa nel tuo codice originale)
-                st.write("Usa le schede sottostanti per gestire questa gara.")
-                # (Assicurati di copiare qui la logica delle TAB 1, 2, 3 dal codice precedente)
-                st.info("Logica convocazioni attiva.")
-            st.markdown("</div>", unsafe_allow_html=True)
+        with st.markdown("<div class='card'>", unsafe_allow_html=True):
+            with st.expander(f"⚽ {ev.get('avversario')} - {ev.get('data')}"):
+                
+                # CARICAMENTO DATI
+                appello = st.session_state.db["storico_presenze"].get(ev["id"], {})
+                convocati_list = []
+                
+                tab1, tab2, tab3 = st.tabs(["⚙️ Compila", "📄 Modulo", "📱 WhatsApp"])
+                
+                with tab1:
+                    resoconto = {}
+                    for r in st.session_state.db["ragazzi"]:
+                        resoconto[r] = st.radio(r, ["🟢 Convocato", "🔴 Non Convocato"], index=0 if appello.get(r) != "🔴 Non Convocato" else 1, horizontal=True, key=f"p_{r}_{ev['id']}")
+                    if st.button("💾 Salva", key=f"s_{ev['id']}"):
+                        st.session_state.db["storico_presenze"][ev["id"]] = resoconto
+                        salvare_dati()
+                        st.rerun()
 
-# ... (Ripeti lo stile anche per le altre schermate)
+                with tab2:
+                    # Stampa Tabella
+                    st.markdown(f"""
+                    <table style='width:100%; border:1px solid #ccc;'>
+                        <tr><th>Nome</th><th>C</th><th>NC</th></tr>
+                        {''.join([f"<tr><td>{r}</td><td>{'X' if resoconto.get(r, '🟢 Convocato') == '🟢 Convocato' else ''}</td><td>{'X' if resoconto.get(r) == '🔴 Non Convocato' else ''}</td></tr>" for r in st.session_state.db["ragazzi"]])}
+                    </table>
+                    """, unsafe_allow_html=True)
+
+                with tab3:
+                    convocati_txt = "\n".join([f"✅ {r}" for r in st.session_state.db["ragazzi"] if resoconto.get(r, '🟢 Convocato') == '🟢 Convocato'])
+                    msg = f"Ciao a tutti,\n\n⚽ *CONVOCAZIONI* ⚽\n⚽ *Partita:* {ev.get('avversario')}\n📅 *Data:* {ev.get('data')}\n🏟️ *Luogo:* {ev.get('indirizzo', 'Casa')}\n\n*ELENCO CONVOCATI:*\n{convocati_txt}\n\n*Forza USO UNITED!* 💚💙"
+                    st.code(msg)
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
 # SCHERMATA: ROSA
 # ==========================================
 elif menu == "🏃 Gestione Rosa":
-    st.header("🏃 Anagrafica")
+    st.header("🏃 Gestione Rosa")
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    # ... (logica lista ragazzi)
+    for r in st.session_state.db["ragazzi"]:
+        st.write(f"• {r}")
     st.markdown("</div>", unsafe_allow_html=True)

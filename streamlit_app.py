@@ -7,6 +7,27 @@ import base64
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
 
+# --- CSS PER LOOK MOBILE E MENU MIGLIORATO ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #f0f2f6; }
+    .card { background-color: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    
+    /* Stile specifico per ingrandire e distanziare il menu laterale su smartphone */
+    [data-testid="stSidebar"] div[role="radiogroup"] label {
+        padding: 12px 15px !important;
+        margin-bottom: 10px !important;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.05);
+    }
+    [data-testid="stSidebar"] div[role="radiogroup"] label p {
+        font-size: 18px !important;
+        font-weight: 600 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- FILE DI SALVATAGGIO (DATABASE LOCALE) ---
 DB_FILE = "misterapp_db.json"
 

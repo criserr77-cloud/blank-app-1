@@ -270,7 +270,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     # Generazione testo WhatsApp con saluto iniziale e note
                     whatsapp_text = f"Ciao a tutti,\n\n"
                     whatsapp_text += f"⚽ *CONVOCAZIONI* ⚽\n"
-                    whatsapp_text += f"⚽ *Partita:*{sq_casa}vs{sq_trasf}\n"
+                    whatsapp_text += f"⚽ *{sq_casa}vs{sq_trasf}*\n"
                     whatsapp_text += f"📅 *Data:* {data_f}\n"
                     whatsapp_text += f"⏰ *Ora Partita:* {ev.get('ora_partita', '___')}\n"
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"

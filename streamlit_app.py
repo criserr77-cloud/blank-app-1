@@ -427,8 +427,8 @@ elif menu == "🟢 Calendario e Convocazioni":
         else:
             nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
             st.session_state.db["eventi"].append({
-                "id": nuevo_id, "data": str(nuova_data), "tipo": "Partita", 
-                "avversario": nuovo_avversario, "luogo": nuovo_luogo, 
+                "id": nuovo_id, "data": str(nuova_data), "tipo": "Partita", 
+                "avversario": nuovo_avversario, "luogo": nuevo_luogo, 
                 "ora_partita": nuova_orap, "ora_convocazione": nuova_orac, 
                 "indirizzo": nuovo_indirizzo, "nota": nuova_nota
             })
@@ -528,7 +528,7 @@ elif menu == "⏱️ Planner Allenamento":
     
     durata_totale = tempo_attivazione + tempo_tecnico + tempo_partita
     st.write("---")
-    st.info(f"⏱️ **Durata totale calcolata:** {durata_totale:.2f} Industrial metal metal target protocol minuti")
+    st.info(f"⏱️ **Durata totale calcolata:** {durata_totale:.2f} minuti")
 
 # ==========================================
 # SCHERMATA 6: GESTIONE ROSA
@@ -545,6 +545,14 @@ elif menu == "🏃 Gestione Rosa":
             
         ruoli_lista = ["portiere", "difensore centrale", "difensore esterno", "centrocampista centrale", "centrocampista esterno", "attaccante centrale", "attaccante esterno"]
         
+        # Riga di Intestazione della Tabella
+        col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.2, 1.2, 1.2, 1.8, 1.6])
+        with col_h1: st.write("**Nome**")
+        with col_h2: st.write("**Cognome**")
+        with col_h3: st.write("**Data di Nascita**")
+        with col_h4: st.write("**Ruolo**")
+        st.write("---")
+        
         for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
             if st.session_state.edit_mode == i:
                 dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {"data_nascita": "2014-01-01", "ruolo": "portiere"})
@@ -553,7 +561,7 @@ elif menu == "🏃 Gestione Rosa":
                 except:
                     dob_val = datetime.date(2014, 1, 1)
                     
-                nuovo_nome_mod = st.text_input("Nome", value=ragazzo, key=f"edit_input_{i}")
+                nuovo_nome_mod = st.text_input("Nome e Cognome", value=ragazzo, key=f"edit_input_{i}")
                 nuova_dob_mod = st.date_input("Data di Nascita", value=dob_val, format="DD/MM/YYYY", key=f"edit_dob_{i}")
                 
                 curr_ruolo = dettagli.get("ruolo", "portiere")
@@ -586,24 +594,32 @@ elif menu == "🏃 Gestione Rosa":
                         st.session_state.edit_mode = None
                         st.rerun()
             else:
-                col_nome, col_modifica, col_cancella = st.columns([2.5, 1, 1])
-                with col_nome: 
-                    dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {})
-                    dob_str = "---"
-                    if "data_nascita" in dettagli:
-                        try:
-                            dob_str = datetime.datetime.strptime(dettagli["data_nascita"], "%Y-%m-%d").strftime("%d/%m/%Y")
-                        except:
-                            dob_str = dettagli["data_nascita"]
-                    ruolo_str = dettagli.get("ruolo", "---")
-                    
-                    st.write(f"• **{ragazzo}** *(📅 Nascita: {dob_str} | 🏃 Ruolo: {ruolo_str})*")
+                dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {})
+                dob_str = "---"
+                if "data_nascita" in dettagli:
+                    try:
+                        dob_str = datetime.datetime.strptime(dettagli["data_nascita"], "%Y-%m-%d").strftime("%d/%m/%Y")
+                    except:
+                        dob_str = dettagli["data_nascita"]
+                ruolo_str = dettagli.get("ruolo", "---")
+                
+                # Suddivido la stringa unica del database in Nome e Cognome per la visualizzazione tabellare
+                parti_nome = ragazzo.split(" ", 1)
+                nome_tab = parti_nome[0]
+                cognome_tab = parti_nome[1] if len(parti_nome) > 1 else ""
+                
+                # Riga dei Dati Giocatore
+                col_r1, col_r2, col_r3, col_r4, col_modifica, col_cancella = st.columns([1.2, 1.2, 1.2, 1.8, 0.8, 0.8])
+                with col_r1: st.write(nome_tab)
+                with col_r2: st.write(cognome_tab)
+                with col_r3: st.write(dob_str)
+                with col_r4: st.write(ruolo_str)
                 with col_modifica:
-                    if st.button("✏️ Modifica", key=f"edit_btn_{i}"):
+                    if st.button("✏️", key=f"edit_btn_{i}"):
                         st.session_state.edit_mode = i
                         st.rerun()
                 with col_cancella:
-                    if st.button("🗑️ Elimina", key=f"del_btn_{i}"):
+                    if st.button("🗑️", key=f"del_btn_{i}"):
                         st.session_state.db["ragazzi"].remove(ragazzo)
                         st.session_state.db["dettagli_ragazzi"].pop(ragazzo, None)
                         salvare_dati()

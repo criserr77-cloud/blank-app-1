@@ -85,7 +85,6 @@ if menu == "📅 Calendario & Appelli":
                     opzioni = ["🟢 Presente", "🔴 Assente", "🟡 Infortunato"] if is_allenamento else ["🟢 Convocato", "🔴 Non Convocato"]
                     
                     for ragazzo in st.session_state.db["ragazzi"]:
-                        # Se è partita, creiamo 3 colonne per far spazio all'inserimento dei minuti
                         if is_allenamento:
                             col_nome, col_stato = st.columns([1, 2])
                         else:
@@ -107,7 +106,6 @@ if menu == "📅 Calendario & Appelli":
                             )
                             resoconto_corrente[ragazzo] = stato
                             
-                        # Selezionatore Minuti (Solo per le partite)
                         if not is_allenamento:
                             with col_minuti:
                                 if "Convocato" in stato and "Non" not in stato:
@@ -116,7 +114,7 @@ if menu == "📅 Calendario & Appelli":
                                     resoconto_minuti[ragazzo] = minuti
                                 else:
                                     resoconto_minuti[ragazzo] = 0
-                                    st.write("") # Mantiene l'allineamento pulito
+                                    st.write("") 
                     
                     st.write("")
                     if st.button("💾 Salva Registro", key=f"btn_salva_{ev['id']}", type="primary"):
@@ -253,4 +251,24 @@ elif menu == "🏃 Gestione Rosa":
     if not st.session_state.db["ragazzi"]: 
         st.warning("La rosa è vuota!")
     else:
-        for i, ragazzo in enumerate(list
+        for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
+            col_nome, col_cancella = st.columns([3, 1])
+            with col_nome: 
+                # Calcoliamo il minutaggio totale assoluto per l'anagrafica
+                min_tot_anagrafica = sum(st.session_state.db["storico_minutaggio"].get(ev_id, {}).get(ragazzo, 0) for ev_id in st.session_state.db["storico_minutaggio"])
+                st.write(f"• **{ragazzo}** *(⏱️ {min_tot_anagrafica}' totali in campo)*")
+            with col_cancella:
+                if st.button("Elimina", key=f"del_{ragazzo}_{i}"):
+                    st.session_state.db["ragazzi"].remove(ragazzo)
+                    salvare_dati()
+                    st.rerun()
+                    
+    st.write("---")
+    st.subheader("➕ Aggiungi un nuovo giocatore")
+    nuovo_nome = st.text_input("Nome e Cognome del ragazzo:")
+    if st.button("Inserisci in Squadra"):
+        if nuovo_nome.strip() != "" and nuovo_nome.strip() not in st.session_state.db["ragazzi"]:
+            st.session_state.db["ragazzi"].append(nuovo_nome.strip())
+            salvare_dati()
+            st.success(f"⚽ {nuovo_nome.strip()} aggiunto alla rosa!")
+            st.rerun()

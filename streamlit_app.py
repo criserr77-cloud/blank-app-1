@@ -33,13 +33,11 @@ def salvare_dati():
         json.dump(st.session_state.db, f, indent=4, ensure_ascii=False)
 
 def get_logo_html():
-    """Cerca il file stemma.png o stemma.jpg e lo converte per la distinta."""
     for ext in ["png", "jpg", "jpeg"]:
         if os.path.exists(f"stemma.{ext}"):
             with open(f"stemma.{ext}", "rb") as f:
                 encoded = base64.b64encode(f.read()).decode()
                 return f"<img src='data:image/{ext};base64,{encoded}' style='max-width: 100px; max-height: 120px; object-fit: contain;'>"
-    # Se non trova l'immagine, mostra lo scudetto di default
     return "<div style='font-size: 50px;'>🛡️</div><div style='color: red; font-weight: bold; font-size: 14px;'>USO</div><div style='color: green; font-weight: bold; font-size: 14px;'>UNITED</div>"
 
 # Inizializziamo lo stato di Streamlit
@@ -223,7 +221,6 @@ elif menu == "🟢 Calendario Partite":
                     
                     st.write("---")
                     
-                    # --- GENERAZIONE MODULO COME DA IMMAGINE ---
                     appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
                     minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
                     
@@ -235,55 +232,42 @@ elif menu == "🟢 Calendario Partite":
                     convocati_list = []
                     
                     for idx, ragazzo in enumerate(st.session_state.db["ragazzi"]):
-                        # MODIFICA IMPORTANTE: Se non c'è nel database, default è "Convocato" per avere la X in tabella!
                         stato = appello_evento.get(ragazzo, "🟢 Convocato")
-                        
                         c_mark = "X" if "Convocato" in stato and "Non" not in stato else ""
                         nc_mark = "X" if "Non Convocato" in stato else ""
                         
                         if c_mark == "X":
                             convocati_list.append(ragazzo)
                             
-                        righe_giocatori += f"""
-                        <tr>
-                            <td style='border: 1px solid black; padding: 5px;'>{idx+1}</td>
-                            <td style='border: 1px solid black; padding: 5px; text-align: left;'>{ragazzo}</td>
-                            <td style='border: 1px solid black; padding: 5px; color: green; font-weight: bold;'>{c_mark}</td>
-                            <td style='border: 1px solid black; padding: 5px; color: red; font-weight: bold;'>{nc_mark}</td>
-                        </tr>
-                        """
+                        # Questa riga è scritta tutta di seguito senza spazi iniziali per evitare l'effetto "codice nero"
+                        righe_giocatori += f"<tr><td style='border: 1px solid black; padding: 5px;'>{idx+1}</td><td style='border: 1px solid black; padding: 5px; text-align: left;'>{ragazzo}</td><td style='border: 1px solid black; padding: 5px; color: green; font-weight: bold;'>{c_mark}</td><td style='border: 1px solid black; padding: 5px; color: red; font-weight: bold;'>{nc_mark}</td></tr>"
                     
                     logo_immagine = get_logo_html()
                     
-                    html_distinta = f"""
-                    <div style='background-color: white; color: black; padding: 10px; font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
-                        <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black;'>
-                            <tr>
-                                <td rowspan='6' style='width: 30%; border: 1px solid black; vertical-align: middle; padding: 10px;'>
-                                    {logo_immagine}
-                                </td>
-                                <td style='border: 1px solid black; color: #4CAF50; font-weight: bold; font-size: 20px; padding: 5px;'>USO UNITED 2014</td>
-                            </tr>
-                            <tr><td style='border: 1px solid black; font-weight: bold; font-size: 16px; padding: 5px;'>CONVOCAZIONI</td></tr>
-                            <tr><td style='border: 1px solid black; padding: 5px;'>PARTITA: {sq_casa} vs {sq_trasf}</td></tr>
-                            <tr><td style='border: 1px solid black; padding: 5px;'>DATA: {data_f}</td></tr>
-                            <tr><td style='border: 1px solid black; padding: 5px;'>ORA PARTITA: {ev.get("ora_partita", "___")}</td></tr>
-                            <tr><td style='border: 1px solid black; padding: 5px;'>ORA CONVOCAZIONE: {ev.get("ora_convocazione", "___")}</td></tr>
-                            <tr>
-                                <td colspan='2' style='border: 1px solid black; font-weight: bold; padding: 5px;'>LUOGO: {ind_campo}</td>
-                            </tr>
-                        </table>
-                        <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black; border-top: none;'>
-                            <tr style='font-weight: bold; background-color: #f0f0f0;'>
-                                <td style='border: 1px solid black; padding: 5px; width: 10%;'>N°</td>
-                                <td style='border: 1px solid black; padding: 5px; width: 50%;'>Nome e Cognome</td>
-                                <td style='border: 1px solid black; padding: 5px; width: 20%;'>C</td>
-                                <td style='border: 1px solid black; padding: 5px; width: 20%;'>NC</td>
-                            </tr>
-                            {righe_giocatori}
-                        </table>
-                    </div>
-                    """
+                    # Anche questa variabile è scritta senza spazi per impedire a Streamlit di impazzire
+                    html_distinta = f"""<div style='background-color: white; color: black; padding: 10px; font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
+<table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black;'>
+<tr>
+<td rowspan='6' style='width: 30%; border: 1px solid black; vertical-align: middle; padding: 10px;'>{logo_immagine}</td>
+<td style='border: 1px solid black; color: #4CAF50; font-weight: bold; font-size: 20px; padding: 5px;'>USO UNITED 2014</td>
+</tr>
+<tr><td style='border: 1px solid black; font-weight: bold; font-size: 16px; padding: 5px;'>CONVOCAZIONI</td></tr>
+<tr><td style='border: 1px solid black; padding: 5px;'>PARTITA: {sq_casa} vs {sq_trasf}</td></tr>
+<tr><td style='border: 1px solid black; padding: 5px;'>DATA: {data_f}</td></tr>
+<tr><td style='border: 1px solid black; padding: 5px;'>ORA PARTITA: {ev.get("ora_partita", "___")}</td></tr>
+<tr><td style='border: 1px solid black; padding: 5px;'>ORA CONVOCAZIONE: {ev.get("ora_convocazione", "___")}</td></tr>
+<tr><td colspan='2' style='border: 1px solid black; font-weight: bold; padding: 5px;'>LUOGO: {ind_campo}</td></tr>
+</table>
+<table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black; border-top: none;'>
+<tr style='font-weight: bold; background-color: #f0f0f0;'>
+<td style='border: 1px solid black; padding: 5px; width: 10%;'>N°</td>
+<td style='border: 1px solid black; padding: 5px; width: 50%;'>Nome e Cognome</td>
+<td style='border: 1px solid black; padding: 5px; width: 20%;'>C</td>
+<td style='border: 1px solid black; padding: 5px; width: 20%;'>NC</td>
+</tr>
+{righe_giocatori}
+</table>
+</div>"""
                     
                     whatsapp_text = f"🟢 *CONVOCAZIONI USO UNITED 2014* 🟢\n"
                     whatsapp_text += f"⚽ *Partita:* {sq_casa} vs {sq_trasf}\n"
@@ -346,7 +330,6 @@ elif menu == "🟢 Calendario Partite":
                             mime="text/html",
                             key=f"dl_html_{ev['id']}"
                         )
-                        st.caption("💡 Tip: Puoi scaricarlo e inviarlo, oppure fare direttamente uno screenshot di questo riquadro dal telefono!")
 
                     with tab3:
                         st.code(whatsapp_text, language="markdown")

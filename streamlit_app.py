@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
 
-# --- CSS PER LOOK MOBILE, MENU E TABELLE RESPONSIVE (DARK/LIGHT MODE) ---
+# --- CSS PER LOOK MOBILE E MENU RESPONSIVE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
     /* Colori nativi del tema di Streamlit per adattarsi alla Dark Mode */
@@ -206,38 +206,67 @@ if menu == "🔵 Calendario Allenamenti":
                             st.rerun()
                     
                     st.write("---")
-                    st.write(f"#### 📋 Registro Presenze")
                     
-                    if not st.session_state.db["ragazzi"]:
-                        st.warning("Rosa vuota.")
-                    else:
-                        appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
-                        resoconto_corrente = {}
-                        opzioni = ["🟢 Presente", "🔴 Assente", "🟡 Infortunato"]
+                    # Nuova struttura a Schede (Tabs) come per le Partite
+                    tab1, tab2 = st.tabs(["📋 Registro Presenze", "📱 Messaggio WhatsApp"])
+                    
+                    with tab1:
+                        if not st.session_state.db["ragazzi"]:
+                            st.warning("Rosa vuota.")
+                        else:
+                            appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
+                            resoconto_corrente = {}
+                            opzioni = ["🟢 Presente", "🔴 Assente", "🟡 Infortunato"]
+                            
+                            for ragazzo in st.session_state.db["ragazzi"]:
+                                col_nome, col_stato = st.columns([1, 2])
+                                with col_nome: st.write(f"**{ragazzo}**")
+                                with col_stato:
+                                    stato_precedente = appello_evento.get(ragazzo, opzioni[0])
+                                    indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
+                                    stato = st.radio(f"Stato_{ragazzo}_{ev['id']}", opzioni, index=indice_default, horizontal=True, label_visibility="collapsed", key=f"p_{ragazzo}_{ev['id']}")
+                                    resoconto_corrente[ragazzo] = stato
+                            
+                            st.write("")
+                            if st.button("💾 Salva Registro", key=f"btn_salva_{ev['id']}", type="primary"):
+                                st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
+                                salvare_dati()
+                                st.success("Presenze salvate!")
+                                st.rerun()
+                                
+                    with tab2:
+                        # Generazione testo WhatsApp per l'allenamento
+                        whatsapp_text_all = f"Ciao a tutti,\n\n"
+                        whatsapp_text_all += f"🏃‍♂️ *PROSSIMO ALLENAMENTO* 🏃‍♂️\n"
+                        whatsapp_text_all += f"📅 *Data:* {data_f}\n"
                         
-                        for ragazzo in st.session_state.db["ragazzi"]:
-                            col_nome, col_stato = st.columns([1, 2])
-                            with col_nome: st.write(f"**{ragazzo}**")
-                            with col_stato:
-                                stato_precedente = appello_evento.get(ragazzo, opzioni[0])
-                                indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
-                                stato = st.radio(f"Stato_{ragazzo}_{ev['id']}", opzioni, index=indice_default, horizontal=True, label_visibility="collapsed", key=f"p_{ragazzo}_{ev['id']}")
-                                resoconto_corrente[ragazzo] = stato
+                        nota_a = ev.get("nota", "").strip()
+                        if nota_a:
+                            whatsapp_text_all += f"📝 *Dettagli:*\n{nota_a}\n"
+                            
+                        whatsapp_text_all += f"\n*Vi aspetto puntuali!*\n*Forza USO UNITED!* 💚💙"
                         
-                        st.write("")
-                        if st.button("💾 Salva Registro", key=f"btn_salva_{ev['id']}", type="primary"):
-                            st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
-                            salvare_dati()
-                            st.success("Presenze salvate!")
-                            st.rerun()
+                        whatsapp_url_all = urllib.parse.quote(whatsapp_text_all)
+                        st.markdown(f'<a href="https://wa.me/?text={whatsapp_url_all}" target="_blank" style="display:block; width:100%; text-align:center; background-color:#25D366; color:white; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; margin-bottom:10px;">📲 Invia Testo su WhatsApp</a>', unsafe_allow_html=True)
+                        st.code(whatsapp_text_all, language="markdown")
+                        st.caption("💡 Clicca sull'iconcina dei foglietti in alto a destra per copiare!")
 
     st.write("---")
     st.subheader("➕ Fissa un nuovo Allenamento")
-    nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_all", format="DD/MM/YYYY")
-    nuova_nota = st.text_area("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
-    if st.button("Aggiungi Allenamento"):
+    col1, col2 = st.columns(2)
+    with col1:
+        nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_all", format="DD/MM/YYYY")
+    with col2:
+        nuova_nota = st.text_area("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
+        
+    if st.button("Aggiungi Allenamento a Calendario"):
         nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
-        st.session_state.db["eventi"].append({"id": nuovo_id, "data": str(nuova_data), "tipo": "Allenamento", "nota": nuova_nota})
+        st.session_state.db["eventi"].append({
+            "id": nuovo_id, 
+            "data": str(nuova_data), 
+            "tipo": "Allenamento", 
+            "nota": nuova_nota
+        })
         salvare_dati()
         st.rerun()
 
@@ -358,7 +387,7 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
-                    # Generazione testo WhatsApp
+                    # Generazione testo WhatsApp con saluto iniziale e note
                     whatsapp_text = f"Ciao a tutti,\n\n"
                     whatsapp_text += f"⚽ *CONVOCAZIONI* ⚽\n"
                     whatsapp_text += f"⚽ *{sq_casa}-{sq_trasf}*\n"
@@ -367,6 +396,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
                     whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
                     
+                    # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
                         whatsapp_text += f"📝 *Note:*\n{nota_p}\n"

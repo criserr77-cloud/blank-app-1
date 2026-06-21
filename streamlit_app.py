@@ -267,8 +267,9 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
-                    # Generazione testo WhatsApp con le Note e i Cuori
-                    whatsapp_text = f"🟢 *CONVOCAZIONI USO UNITED 2014* 🟢\n"
+                    # Generazione testo WhatsApp con saluto iniziale, note e cuori
+                    whatsapp_text = f"Ciao a tutti,\n\n"
+                    whatsapp_text += f"🟢 *CONVOCAZIONI USO UNITED 2014* 🟢\n"
                     whatsapp_text += f"⚽ *Partita:* {sq_casa} vs {sq_trasf}\n"
                     whatsapp_text += f"📅 *Data:* {data_f}\n"
                     whatsapp_text += f"⏰ *Ora Partita:* {ev.get('ora_partita', '___')}\n"

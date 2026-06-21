@@ -7,23 +7,32 @@ import base64
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
 
-# --- CSS PER LOOK MOBILE E MENU MIGLIORATO ---
+# --- CSS PER LOOK MOBILE E MENU (DARK MODE) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #f0f2f6; }
-    .card { background-color: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    /* Usiamo i colori nativi del tema di Streamlit per adattarsi perfettamente alla Dark Mode */
+    .card { 
+        background-color: var(--secondary-background-color); 
+        color: var(--text-color);
+        border-radius: 15px; 
+        padding: 20px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        margin-bottom: 20px; 
+        border: 1px solid rgba(255,255,255,0.1);
+    }
     
     /* Stile specifico per ingrandire e distanziare il menu laterale su smartphone */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
         padding: 12px 15px !important;
         margin-bottom: 10px !important;
-        background-color: white;
+        background-color: var(--secondary-background-color);
         border-radius: 10px;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
     }
     [data-testid="stSidebar"] div[role="radiogroup"] label p {
         font-size: 18px !important;
         font-weight: 600 !important;
+        color: var(--text-color) !important;
     }
     </style>
 """, unsafe_allow_html=True)

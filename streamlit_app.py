@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
 
-# --- CSS PER LOOK MOBILE, MENU E TABELLE (DARK/LIGHT MODE) ---
+# --- CSS PER LOOK MOBILE, MENU E TABELLE RESPONSIVE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
     /* Colori nativi del tema di Streamlit per adattarsi alla Dark Mode */
@@ -22,7 +22,7 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.1);
     }
     
-    /* Menu laterale su smartphone */
+    /* Stile specifico per ingrandire e distanziare il menu laterale su smartphone */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
         padding: 12px 15px !important;
         margin-bottom: 10px !important;
@@ -36,28 +36,32 @@ st.markdown("""
         color: var(--text-color) !important;
     }
     
-    /* Stili personalizzati per le "Celle Definite" della Rosa */
-    .table-header {
-        background-color: var(--secondary-background-color);
-        color: var(--text-color);
-        padding: 10px;
-        border: 1px solid rgba(128,128,128,0.5);
-        border-radius: 5px;
-        text-align: center;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-    .table-cell {
-        padding: 8px 10px;
-        border: 1px solid rgba(128,128,128,0.3);
-        border-radius: 5px;
-        margin-bottom: 5px;
-        height: 42px;
-        display: flex;
-        align-items: center;
-        overflow: hidden;
-        white-space: nowrap;
-        background-color: rgba(128,128,128,0.05);
+    /* Tabella Rosa - Responsive CSS */
+    .mobile-label { display: none; }
+    
+    @media (max-width: 768px) {
+        .hide-on-mobile { display: none !important; }
+        .mobile-card { 
+            flex-direction: column !important; 
+            padding: 15px !important;
+            gap: 8px !important;
+            align-items: flex-start !important;
+        }
+        .mobile-card > div { 
+            width: 100%;
+            border-bottom: 1px solid rgba(128,128,128,0.2); 
+            padding-bottom: 5px;
+        }
+        .mobile-card > div:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .mobile-label { 
+            display: inline-block !important; 
+            width: 80px; 
+            font-weight: bold; 
+            opacity: 0.6; 
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -569,17 +573,24 @@ elif menu == "🏃 Gestione Rosa":
             
         ruoli_lista = ["Portiere", "Difensore centrale", "Difensore esterno", "Centrocampista centrale", "Centrocampista esterno", "Attaccante centrale", "Attaccante esterno"]
         
-        # Riga di Intestazione della Tabella "Celle definite"
-        col_h1, col_h2, col_h3, col_h4, col_h5, col_h6 = st.columns([1.2, 1.2, 1.2, 1.8, 0.8, 0.8])
-        with col_h1: st.markdown("<div class='table-header'>Nome</div>", unsafe_allow_html=True)
-        with col_h2: st.markdown("<div class='table-header'>Cognome</div>", unsafe_allow_html=True)
-        with col_h3: st.markdown("<div class='table-header'>Nascita</div>", unsafe_allow_html=True)
-        with col_h4: st.markdown("<div class='table-header'>Ruolo</div>", unsafe_allow_html=True)
-        with col_h5: st.markdown("<div class='table-header'>Mod</div>", unsafe_allow_html=True)
-        with col_h6: st.markdown("<div class='table-header'>Canc</div>", unsafe_allow_html=True)
+        # --- INTESTAZIONE TABELLA (Nasconde automaticamente su mobile) ---
+        st.markdown("""
+            <div class="hide-on-mobile" style="display: flex; font-weight: bold; background-color: rgba(128,128,128,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid rgba(128,128,128,0.3);">
+                <div style="flex: 6; display: flex;">
+                    <div style="flex: 1;">Nome</div>
+                    <div style="flex: 1;">Cognome</div>
+                    <div style="flex: 1;">Nascita</div>
+                    <div style="flex: 1;">Ruolo</div>
+                </div>
+                <div style="flex: 1; text-align: center; margin-left: 10px;">Mod</div>
+                <div style="flex: 1; text-align: center; margin-left: 10px;">Canc</div>
+            </div>
+        """, unsafe_allow_html=True)
         
         for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
             if st.session_state.edit_mode == i:
+                st.write("---")
+                st.markdown(f"**✏️ Modifica Dati per {ragazzo}**")
                 dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {"data_nascita": "2014-01-01", "ruolo": "Portiere"})
                 try:
                     dob_val = datetime.datetime.strptime(dettagli.get("data_nascita", "2014-01-01"), "%Y-%m-%d").date()
@@ -629,23 +640,28 @@ elif menu == "🏃 Gestione Rosa":
                         dob_str = dettagli["data_nascita"]
                 ruolo_str = dettagli.get("ruolo", "---").capitalize()
                 
-                # Suddivido la stringa unica del database in Nome e Cognome per la visualizzazione tabellare
+                # Suddivido la stringa unica in Nome e Cognome 
                 parti_nome = ragazzo.split(" ", 1)
                 nome_tab = parti_nome[0]
                 cognome_tab = parti_nome[1] if len(parti_nome) > 1 else ""
                 
-                # Riga dei Dati Giocatore (Celle definite)
-                col_r1, col_r2, col_r3, col_r4, col_modifica, col_cancella = st.columns([1.2, 1.2, 1.2, 1.8, 0.8, 0.8])
-                with col_r1: st.markdown(f"<div class='table-cell'>{nome_tab}</div>", unsafe_allow_html=True)
-                with col_r2: st.markdown(f"<div class='table-cell'>{cognome_tab}</div>", unsafe_allow_html=True)
-                with col_r3: st.markdown(f"<div class='table-cell'>{dob_str}</div>", unsafe_allow_html=True)
-                with col_r4: st.markdown(f"<div class='table-cell'>{ruolo_str}</div>", unsafe_allow_html=True)
-                with col_modifica:
-                    if st.button("✏️", key=f"edit_btn_{i}"):
+                col_info, col_btn_edit, col_btn_del = st.columns([6, 1, 1])
+                with col_info:
+                    # Su PC è una riga tabellare, su smartphone diventa una comoda Card
+                    st.markdown(f"""
+                    <div class="mobile-card" style="display: flex; background-color: var(--secondary-background-color); padding: 10px; border: 1px solid rgba(128,128,128,0.3); border-radius: 5px; margin-bottom: 5px; align-items: center;">
+                        <div style="flex: 1;"><span class="mobile-label">Nome: </span>{nome_tab}</div>
+                        <div style="flex: 1;"><span class="mobile-label">Cognome: </span>{cognome_tab}</div>
+                        <div style="flex: 1;"><span class="mobile-label">Nascita: </span>{dob_str}</div>
+                        <div style="flex: 1;"><span class="mobile-label">Ruolo: </span>{ruolo_str}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_btn_edit:
+                    if st.button("✏️", key=f"edit_btn_{i}", use_container_width=True):
                         st.session_state.edit_mode = i
                         st.rerun()
-                with col_cancella:
-                    if st.button("🗑️", key=f"del_btn_{i}"):
+                with col_btn_del:
+                    if st.button("🗑️", key=f"del_btn_{i}", use_container_width=True):
                         st.session_state.db["ragazzi"].remove(ragazzo)
                         st.session_state.db["dettagli_ragazzi"].pop(ragazzo, None)
                         salvare_dati()

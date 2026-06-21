@@ -39,9 +39,11 @@ if "db" not in st.session_state:
     if "storico_minutaggio" not in st.session_state.db:
         st.session_state.db["storico_minutaggio"] = {}
 
-# Variabile di stato per gestire la modalità di modifica del nome
+# Variabili di stato per gestire le modalità di modifica
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = None
+if "edit_evento" not in st.session_state:
+    st.session_state.edit_evento = None
 
 # --- MENU LATERALE ---
 menu = st.sidebar.radio("Navigazione", [
@@ -67,72 +69,118 @@ if menu == "📅 Calendario & Appelli":
         st.info("Nessun evento in calendario. Creane uno qui sotto!")
     else:
         for ev in st.session_state.db["eventi"]:
-            data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
-            is_allenamento = ev["tipo"] == "Allenamento"
-            
-            emoji = "🔵" if is_allenamento else "🟢"
-            titolo_box = f"{emoji} {ev['tipo']} del {data_f} ({ev['nota']})"
-            
-            with st.expander(titolo_box):
-                st.write(f"#### 📋 {'Registro Presenze' if is_allenamento else 'Lista Convocazioni e Minutaggio'}")
+            # Se questo evento è in modalità modifica, mostriamo il form
+            if st.session_state.edit_evento == ev["id"]:
+                st.write(f"### ✏️ Modifica Evento")
+                curr_date = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").date()
+                idx_tipo = ["Allenamento", "Partita", "Torneo"].index(ev["tipo"]) if ev["tipo"] in ["Allenamento", "Partita", "Torneo"] else 0
                 
-                if not st.session_state.db["ragazzi"]:
-                    st.warning("Non ci sono giocatori in rosa. Vai alla sezione 'Gestione Rosa'.")
-                else:
-                    appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
-                    minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
-                    
-                    resoconto_corrente = {}
-                    resoconto_minuti = {}
-                    
-                    opzioni = ["🟢 Presente", "🔴 Assente", "🟡 Infortunato"] if is_allenamento else ["🟢 Convocato", "🔴 Non Convocato"]
-                    
-                    for ragazzo in st.session_state.db["ragazzi"]:
-                        if is_allenamento:
-                            col_nome, col_stato = st.columns([1, 2])
-                        else:
-                            col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
-                            
-                        with col_nome:
-                            st.write(f"**{ragazzo}**")
-                        with col_stato:
-                            stato_precedente = appello_evento.get(ragazzo, opzioni[0])
-                            indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
-                            
-                            stato = st.radio(
-                                f"Stato_{ragazzo}_{ev['id']}",
-                                opzioni,
-                                index=indice_default,
-                                horizontal=True,
-                                label_visibility="collapsed",
-                                key=f"p_{ragazzo}_{ev['id']}"
-                            )
-                            resoconto_corrente[ragazzo] = stato
-                            
-                        if not is_allenamento:
-                            with col_minuti:
-                                if "Convocato" in stato and "Non" not in stato:
-                                    min_prec = minutaggio_evento.get(ragazzo, 0)
-                                    minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
-                                    resoconto_minuti[ragazzo] = minuti
-                                else:
-                                    resoconto_minuti[ragazzo] = 0
-                                    st.write("") 
-                    
-                    st.write("")
-                    if st.button("💾 Salva Registro", key=f"btn_salva_{ev['id']}", type="primary"):
-                        st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
-                        if not is_allenamento:
-                            st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
+                mod_tipo = st.selectbox("Tipo di evento", ["Allenamento", "Partita", "Torneo"], index=idx_tipo, key=f"mod_t_{ev['id']}")
+                mod_data = st.date_input("Data evento", curr_date, key=f"mod_d_{ev['id']}")
+                mod_nota = st.text_input("Note", value=ev["nota"], key=f"mod_n_{ev['id']}")
+                
+                col_s, col_a = st.columns(2)
+                with col_s:
+                    if st.button("💾 Salva Modifiche", key=f"s_mod_{ev['id']}", type="primary"):
+                        ev["tipo"] = mod_tipo
+                        ev["data"] = str(mod_data)
+                        ev["nota"] = mod_nota
+                        st.session_state.edit_evento = None
                         salvare_dati()
-                        st.success("Dati archiviati con successo!")
+                        st.success("Evento aggiornato!")
                         st.rerun()
+                with col_a:
+                    if st.button("❌ Annulla", key=f"a_mod_{ev['id']}"):
+                        st.session_state.edit_evento = None
+                        st.rerun()
+                st.write("---")
+            else:
+                # Visualizzazione normale dell'evento
+                data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
+                is_allenamento = ev["tipo"] == "Allenamento"
+                
+                emoji = "🔵" if is_allenamento else "🟢"
+                titolo_box = f"{emoji} {ev['tipo']} del {data_f} ({ev['nota']})"
+                
+                with st.expander(titolo_box):
+                    # Tasti Modifica e Elimina in cima al box
+                    col_mod, col_del = st.columns([1, 1])
+                    with col_mod:
+                        if st.button("✏️ Modifica Evento", key=f"ed_ev_{ev['id']}"):
+                            st.session_state.edit_evento = ev["id"]
+                            st.rerun()
+                    with col_del:
+                        if st.button("🗑️ Elimina Evento", key=f"del_ev_{ev['id']}"):
+                            # Rimuoviamo l'evento
+                            st.session_state.db["eventi"] = [e for e in st.session_state.db["eventi"] if e["id"] != ev["id"]]
+                            # Pulizia dati associati all'evento eliminato
+                            if ev["id"] in st.session_state.db["storico_presenze"]:
+                                del st.session_state.db["storico_presenze"][ev["id"]]
+                            if ev["id"] in st.session_state.db["storico_minutaggio"]:
+                                del st.session_state.db["storico_minutaggio"][ev["id"]]
+                            salvare_dati()
+                            st.rerun()
+                    
+                    st.write("---")
+                    st.write(f"#### 📋 {'Registro Presenze' if is_allenamento else 'Lista Convocazioni e Minutaggio'}")
+                    
+                    if not st.session_state.db["ragazzi"]:
+                        st.warning("Non ci sono giocatori in rosa. Vai alla sezione 'Gestione Rosa'.")
+                    else:
+                        appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
+                        minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
+                        
+                        resoconto_corrente = {}
+                        resoconto_minuti = {}
+                        
+                        opzioni = ["🟢 Presente", "🔴 Assente", "🟡 Infortunato"] if is_allenamento else ["🟢 Convocato", "🔴 Non Convocato"]
+                        
+                        for ragazzo in st.session_state.db["ragazzi"]:
+                            if is_allenamento:
+                                col_nome, col_stato = st.columns([1, 2])
+                            else:
+                                col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
+                                
+                            with col_nome:
+                                st.write(f"**{ragazzo}**")
+                            with col_stato:
+                                stato_precedente = appello_evento.get(ragazzo, opzioni[0])
+                                indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
+                                
+                                stato = st.radio(
+                                    f"Stato_{ragazzo}_{ev['id']}",
+                                    opzioni,
+                                    index=indice_default,
+                                    horizontal=True,
+                                    label_visibility="collapsed",
+                                    key=f"p_{ragazzo}_{ev['id']}"
+                                )
+                                resoconto_corrente[ragazzo] = stato
+                                
+                            if not is_allenamento:
+                                with col_minuti:
+                                    if "Convocato" in stato and "Non" not in stato:
+                                        min_prec = minutaggio_evento.get(ragazzo, 0)
+                                        minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
+                                        resoconto_minuti[ragazzo] = minuti
+                                    else:
+                                        resoconto_minuti[ragazzo] = 0
+                                        st.write("") 
+                        
+                        st.write("")
+                        if st.button("💾 Salva Registro", key=f"btn_salva_{ev['id']}", type="primary"):
+                            st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
+                            if not is_allenamento:
+                                st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
+                            salvare_dati()
+                            st.success("Dati archiviati con successo!")
+                            st.rerun()
 
     st.write("---")
     st.subheader("➕ Programma un Nuovo Evento")
-    nuovo_tipo = st.selectbox("Tipo di evento", ["Allenamento", "Partita", "Torneo"])
-    nuova_data = st.date_input("Data evento", datetime.date.today())
-    nuova_nota = st.text_input("Note (es. 'Campo Principale ore 17:30')", placeholder="Inserisci dettagli...")
+    nuovo_tipo = st.selectbox("Tipo di evento", ["Allenamento", "Partita", "Torneo"], key="new_tipo")
+    nuova_data = st.date_input("Data evento", datetime.date.today(), key="new_data")
+    nuova_nota = st.text_input("Note (es. 'Campo Principale ore 17:30')", placeholder="Inserisci dettagli...", key="new_nota")
     
     if st.button("Inserisci a Calendario"):
         nuovo_id = str(int(max([int(ev["id"]) for ev in st.session_state.db["eventi"]], default=0)) + 1)
@@ -255,7 +303,6 @@ elif menu == "🏃 Gestione Rosa":
     else:
         for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
             
-            # Se siamo in modalità modifica per questo specifico ragazzo
             if st.session_state.edit_mode == i:
                 col_input, col_salva, col_annulla = st.columns([2, 1, 1])
                 with col_input:
@@ -263,17 +310,13 @@ elif menu == "🏃 Gestione Rosa":
                 with col_salva:
                     if st.button("💾 Salva", key=f"save_btn_{i}", type="primary"):
                         nuovo_nome_mod = nuovo_nome_mod.strip()
-                        # Procedi solo se il nome è cambiato, non è vuoto e non è già in uso
                         if nuovo_nome_mod and nuovo_nome_mod != ragazzo and nuovo_nome_mod not in st.session_state.db["ragazzi"]:
-                            # 1. Aggiorna nome nella rosa
                             st.session_state.db["ragazzi"][i] = nuovo_nome_mod
                             
-                            # 2. Aggiorna lo storico presenze per non perdere i dati
                             for ev_id, appello in st.session_state.db["storico_presenze"].items():
                                 if ragazzo in appello:
                                     appello[nuovo_nome_mod] = appello.pop(ragazzo)
                                     
-                            # 3. Aggiorna lo storico minutaggi
                             for ev_id, min_dict in st.session_state.db["storico_minutaggio"].items():
                                 if ragazzo in min_dict:
                                     min_dict[nuovo_nome_mod] = min_dict.pop(ragazzo)
@@ -286,7 +329,6 @@ elif menu == "🏃 Gestione Rosa":
                         st.session_state.edit_mode = None
                         st.rerun()
             else:
-                # Visualizzazione standard (con tasto Modifica e tasto Elimina)
                 col_nome, col_modifica, col_cancella = st.columns([2.5, 1, 1])
                 with col_nome: 
                     min_tot_anagrafica = sum(st.session_state.db["storico_minutaggio"].get(ev_id, {}).get(ragazzo, 0) for ev_id in st.session_state.db["storico_minutaggio"])

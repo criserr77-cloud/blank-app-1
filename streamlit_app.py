@@ -8,10 +8,10 @@ import streamlit.components.v1 as components
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
 
-# --- CSS PER LOOK MOBILE E MENU (DARK MODE) ---
+# --- CSS PER LOOK MOBILE, MENU E TABELLE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
-    /* Usiamo i colori nativi del tema di Streamlit per adattarsi perfettamente alla Dark Mode */
+    /* Colori nativi del tema di Streamlit per adattarsi alla Dark Mode */
     .card { 
         background-color: var(--secondary-background-color); 
         color: var(--text-color);
@@ -22,7 +22,7 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.1);
     }
     
-    /* Stile specifico per ingrandire e distanziare il menu laterale su smartphone */
+    /* Menu laterale su smartphone */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
         padding: 12px 15px !important;
         margin-bottom: 10px !important;
@@ -34,6 +34,30 @@ st.markdown("""
         font-size: 18px !important;
         font-weight: 600 !important;
         color: var(--text-color) !important;
+    }
+    
+    /* Stili personalizzati per le "Celle Definite" della Rosa */
+    .table-header {
+        background-color: var(--secondary-background-color);
+        color: var(--text-color);
+        padding: 10px;
+        border: 1px solid rgba(128,128,128,0.5);
+        border-radius: 5px;
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .table-cell {
+        padding: 8px 10px;
+        border: 1px solid rgba(128,128,128,0.3);
+        border-radius: 5px;
+        margin-bottom: 5px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        white-space: nowrap;
+        background-color: rgba(128,128,128,0.05);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -428,7 +452,7 @@ elif menu == "🟢 Calendario e Convocazioni":
             nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
             st.session_state.db["eventi"].append({
                 "id": nuovo_id, "data": str(nuova_data), "tipo": "Partita", 
-                "avversario": nuovo_avversario, "luogo": nuevo_luogo, 
+                "avversario": nuovo_avversario, "luogo": nuovo_luogo, 
                 "ora_partita": nuova_orap, "ora_convocazione": nuova_orac, 
                 "indirizzo": nuovo_indirizzo, "nota": nuova_nota
             })
@@ -543,19 +567,20 @@ elif menu == "🏃 Gestione Rosa":
         if "dettagli_ragazzi" not in st.session_state.db:
             st.session_state.db["dettagli_ragazzi"] = {}
             
-        ruoli_lista = ["portiere", "difensore centrale", "difensore esterno", "centrocampista centrale", "centrocampista esterno", "attaccante centrale", "attaccante esterno"]
+        ruoli_lista = ["Portiere", "Difensore centrale", "Difensore esterno", "Centrocampista centrale", "Centrocampista esterno", "Attaccante centrale", "Attaccante esterno"]
         
-        # Riga di Intestazione della Tabella
-        col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns([1.2, 1.2, 1.2, 1.8, 1.6])
-        with col_h1: st.write("**Nome**")
-        with col_h2: st.write("**Cognome**")
-        with col_h3: st.write("**Data di Nascita**")
-        with col_h4: st.write("**Ruolo**")
-        st.write("---")
+        # Riga di Intestazione della Tabella "Celle definite"
+        col_h1, col_h2, col_h3, col_h4, col_h5, col_h6 = st.columns([1.2, 1.2, 1.2, 1.8, 0.8, 0.8])
+        with col_h1: st.markdown("<div class='table-header'>Nome</div>", unsafe_allow_html=True)
+        with col_h2: st.markdown("<div class='table-header'>Cognome</div>", unsafe_allow_html=True)
+        with col_h3: st.markdown("<div class='table-header'>Nascita</div>", unsafe_allow_html=True)
+        with col_h4: st.markdown("<div class='table-header'>Ruolo</div>", unsafe_allow_html=True)
+        with col_h5: st.markdown("<div class='table-header'>Mod</div>", unsafe_allow_html=True)
+        with col_h6: st.markdown("<div class='table-header'>Canc</div>", unsafe_allow_html=True)
         
         for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
             if st.session_state.edit_mode == i:
-                dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {"data_nascita": "2014-01-01", "ruolo": "portiere"})
+                dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {"data_nascita": "2014-01-01", "ruolo": "Portiere"})
                 try:
                     dob_val = datetime.datetime.strptime(dettagli.get("data_nascita", "2014-01-01"), "%Y-%m-%d").date()
                 except:
@@ -564,7 +589,7 @@ elif menu == "🏃 Gestione Rosa":
                 nuovo_nome_mod = st.text_input("Nome e Cognome", value=ragazzo, key=f"edit_input_{i}")
                 nuova_dob_mod = st.date_input("Data di Nascita", value=dob_val, format="DD/MM/YYYY", key=f"edit_dob_{i}")
                 
-                curr_ruolo = dettagli.get("ruolo", "portiere")
+                curr_ruolo = dettagli.get("ruolo", "Portiere").capitalize()
                 ruolo_idx = ruoli_lista.index(curr_ruolo) if curr_ruolo in ruoli_lista else 0
                 nuovo_ruolo_mod = st.selectbox("Ruolo", ruoli_lista, index=ruolo_idx, key=f"edit_ruolo_{i}")
                 
@@ -593,6 +618,7 @@ elif menu == "🏃 Gestione Rosa":
                     if st.button("❌ Annulla", key=f"cancel_btn_{i}"):
                         st.session_state.edit_mode = None
                         st.rerun()
+                st.write("---")
             else:
                 dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {})
                 dob_str = "---"
@@ -601,19 +627,19 @@ elif menu == "🏃 Gestione Rosa":
                         dob_str = datetime.datetime.strptime(dettagli["data_nascita"], "%Y-%m-%d").strftime("%d/%m/%Y")
                     except:
                         dob_str = dettagli["data_nascita"]
-                ruolo_str = dettagli.get("ruolo", "---")
+                ruolo_str = dettagli.get("ruolo", "---").capitalize()
                 
                 # Suddivido la stringa unica del database in Nome e Cognome per la visualizzazione tabellare
                 parti_nome = ragazzo.split(" ", 1)
                 nome_tab = parti_nome[0]
                 cognome_tab = parti_nome[1] if len(parti_nome) > 1 else ""
                 
-                # Riga dei Dati Giocatore
+                # Riga dei Dati Giocatore (Celle definite)
                 col_r1, col_r2, col_r3, col_r4, col_modifica, col_cancella = st.columns([1.2, 1.2, 1.2, 1.8, 0.8, 0.8])
-                with col_r1: st.write(nome_tab)
-                with col_r2: st.write(cognome_tab)
-                with col_r3: st.write(dob_str)
-                with col_r4: st.write(ruolo_str)
+                with col_r1: st.markdown(f"<div class='table-cell'>{nome_tab}</div>", unsafe_allow_html=True)
+                with col_r2: st.markdown(f"<div class='table-cell'>{cognome_tab}</div>", unsafe_allow_html=True)
+                with col_r3: st.markdown(f"<div class='table-cell'>{dob_str}</div>", unsafe_allow_html=True)
+                with col_r4: st.markdown(f"<div class='table-cell'>{ruolo_str}</div>", unsafe_allow_html=True)
                 with col_modifica:
                     if st.button("✏️", key=f"edit_btn_{i}"):
                         st.session_state.edit_mode = i
@@ -629,7 +655,7 @@ elif menu == "🏃 Gestione Rosa":
     st.subheader("➕ Aggiungi un nuovo giocatore")
     nuovo_nome_ins = st.text_input("Nome e Cognome del ragazzo:", key="nuovo_ins_input")
     nuova_dob_ins = st.date_input("Data di Nascita:", value=datetime.date(2014, 1, 1), format="DD/MM/YYYY", key="nuovo_ins_dob")
-    ruoli_lista = ["portiere", "difensore centrale", "difensore esterno", "centrocampista centrale", "centrocampista esterno", "attaccante centrale", "attaccante esterno"]
+    ruoli_lista = ["Portiere", "Difensore centrale", "Difensore esterno", "Centrocampista centrale", "Centrocampista esterno", "Attaccante centrale", "Attaccante esterno"]
     nuovo_ruolo_ins = st.selectbox("Ruolo:", ruoli_lista, key="nuovo_ins_ruolo")
     
     if st.button("Inserisci in Squadra"):

@@ -144,7 +144,7 @@ if menu == "🔵 Calendario Allenamenti":
         st.rerun()
 
 # ==========================================
-# SCHERMATA 2: PARTITE
+# SCHERMATA 2: PARTITE E DISTINTA UFFICIALE
 # ==========================================
 elif menu == "🟢 Calendario Partite":
     st.header("🟢 Calendario e Convocazioni Partite")
@@ -214,63 +214,132 @@ elif menu == "🟢 Calendario Partite":
                     
                     st.write("---")
                     
-                    # GRAFICA DISTINTA DI CONVOCAZIONE
+                    # --- GENERAZIONE MODULO COME DA IMMAGINE ---
+                    appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
+                    minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
+                    
                     sq_casa = "USO UNITED 2014" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
                     sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED 2014"
+                    ind_campo = ev.get("indirizzo", "Campo di Casa") if ev.get("luogo", "Casa") == "Trasferta" else "Campo di Casa"
                     
-                    # Se è in trasferta, prepariamo la riga HTML dell'indirizzo
-                    indirizzo_html = ""
-                    if ev.get("luogo", "Casa") == "Trasferta":
-                        ind_campo = ev.get("indirizzo", "Non specificato")
-                        indirizzo_html = f"<p style='font-size: 18px; margin: 5px 0; color: #d32f2f;'><strong>INDIRIZZO CAMPO:</strong> {ind_campo}</p>"
+                    righe_giocatori = ""
+                    convocati_list = []
                     
-                    st.markdown(f"""
-                    <div style='text-align: center; border: 2px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px; background-color: #f9f9f9; color: #333;'>
-                        <h2 style='color: #4CAF50; margin: 0; font-family: Arial, sans-serif;'>USO UNITED 2014</h2>
-                        <h3 style='margin: 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;'>CONVOCAZIONI</h3>
-                        <p style='font-size: 18px; margin: 5px 0;'><strong>PARTITA:</strong> {sq_casa} vs {sq_trasf}</p>
-                        <p style='font-size: 18px; margin: 5px 0;'><strong>DATA:</strong> {data_f}</p>
-                        <p style='font-size: 18px; margin: 5px 0;'><strong>ORA PARTITA:</strong> {ev.get("ora_partita", "___")}</p>
-                        <p style='font-size: 18px; margin: 5px 0;'><strong>ORA CONVOCAZIONE:</strong> {ev.get("ora_convocazione", "___")}</p>
-                        {indirizzo_html}
+                    for idx, ragazzo in enumerate(st.session_state.db["ragazzi"]):
+                        stato = appello_evento.get(ragazzo, "")
+                        c_mark = "X" if "Convocato" in stato and "Non" not in stato else ""
+                        nc_mark = "X" if "Non Convocato" in stato else ""
+                        
+                        if c_mark == "X":
+                            convocati_list.append(ragazzo)
+                            
+                        righe_giocatori += f"""
+                        <tr>
+                            <td style='border: 1px solid black; padding: 5px;'>{idx+1}</td>
+                            <td style='border: 1px solid black; padding: 5px; text-align: left;'>{ragazzo}</td>
+                            <td style='border: 1px solid black; padding: 5px; color: green; font-weight: bold;'>{c_mark}</td>
+                            <td style='border: 1px solid black; padding: 5px; color: red; font-weight: bold;'>{nc_mark}</td>
+                        </tr>
+                        """
+                        
+                    html_distinta = f"""
+                    <div style='background-color: white; color: black; padding: 10px; font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
+                        <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black;'>
+                            <tr>
+                                <td rowspan='6' style='width: 30%; border: 1px solid black; vertical-align: middle;'>
+                                    <div style='font-size: 50px;'>🛡️</div>
+                                    <div style='color: red; font-weight: bold; font-size: 14px;'>USO</div>
+                                    <div style='color: green; font-weight: bold; font-size: 14px;'>UNITED</div>
+                                </td>
+                                <td style='border: 1px solid black; color: #4CAF50; font-weight: bold; font-size: 20px; padding: 5px;'>USO UNITED 2014</td>
+                            </tr>
+                            <tr><td style='border: 1px solid black; font-weight: bold; font-size: 16px; padding: 5px;'>CONVOCAZIONI</td></tr>
+                            <tr><td style='border: 1px solid black; padding: 5px;'>PARTITA: {sq_casa} vs {sq_trasf}</td></tr>
+                            <tr><td style='border: 1px solid black; padding: 5px;'>DATA: {data_f}</td></tr>
+                            <tr><td style='border: 1px solid black; padding: 5px;'>ORA PARTITA: {ev.get("ora_partita", "___")}</td></tr>
+                            <tr><td style='border: 1px solid black; padding: 5px;'>ORA CONVOCAZIONE: {ev.get("ora_convocazione", "___")}</td></tr>
+                            <tr>
+                                <td colspan='2' style='border: 1px solid black; font-weight: bold; padding: 5px;'>LUOGO: {ind_campo}</td>
+                            </tr>
+                        </table>
+                        <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black; border-top: none;'>
+                            <tr style='font-weight: bold; background-color: #f0f0f0;'>
+                                <td style='border: 1px solid black; padding: 5px; width: 10%;'>N°</td>
+                                <td style='border: 1px solid black; padding: 5px; width: 50%;'>Nome e Cognome</td>
+                                <td style='border: 1px solid black; padding: 5px; width: 20%;'>C</td>
+                                <td style='border: 1px solid black; padding: 5px; width: 20%;'>NC</td>
+                            </tr>
+                            {righe_giocatori}
+                        </table>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """
                     
-                    if not st.session_state.db["ragazzi"]:
-                        st.warning("Rosa vuota.")
+                    whatsapp_text = f"🟢 *CONVOCAZIONI USO UNITED 2014* 🟢\n"
+                    whatsapp_text += f"⚽ *Partita:* {sq_casa} vs {sq_trasf}\n"
+                    whatsapp_text += f"📅 *Data:* {data_f}\n"
+                    whatsapp_text += f"⏰ *Ora Partita:* {ev.get('ora_partita', '___')}\n"
+                    whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
+                    whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n\n"
+                    whatsapp_text += f"*ELENCO CONVOCATI:*\n"
+                    if convocati_list:
+                        for c in convocati_list:
+                            whatsapp_text += f"✅ {c}\n"
                     else:
-                        appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
-                        minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
-                        
-                        resoconto_corrente = {}
-                        resoconto_minuti = {}
-                        opzioni = ["🟢 Convocato", "🔴 Non Convocato"]
-                        
-                        for ragazzo in st.session_state.db["ragazzi"]:
-                            col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
-                            with col_nome: st.write(f"**{ragazzo}**")
-                            with col_stato:
-                                stato_precedente = appello_evento.get(ragazzo, opzioni[0])
-                                indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
-                                stato = st.radio(f"Stato_{ragazzo}_{ev['id']}", opzioni, index=indice_default, horizontal=True, label_visibility="collapsed", key=f"p_{ragazzo}_{ev['id']}")
-                                resoconto_corrente[ragazzo] = stato
-                                
-                            with col_minuti:
-                                if "Convocato" in stato and "Non" not in stato:
-                                    min_prec = minutaggio_evento.get(ragazzo, 0)
-                                    minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
-                                    resoconto_minuti[ragazzo] = minuti
-                                else:
-                                    resoconto_minuti[ragazzo] = 0
-                                    st.write("") 
-                        
+                        whatsapp_text += "*(Nessun convocato ancora selezionato)*\n"
+                    whatsapp_text += "\n*Forza USO UNITED!* 🛡️"
+
+                    # SCHEDE DI NAVIGAZIONE
+                    tab1, tab2, tab3 = st.tabs(["⚙️ Compila Elenco", "📄 Modulo Ufficiale", "📱 Messaggio WhatsApp"])
+                    
+                    with tab1:
+                        if not st.session_state.db["ragazzi"]:
+                            st.warning("Rosa vuota.")
+                        else:
+                            resoconto_corrente = {}
+                            resoconto_minuti = {}
+                            opzioni = ["🟢 Convocato", "🔴 Non Convocato"]
+                            
+                            for ragazzo in st.session_state.db["ragazzi"]:
+                                col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
+                                with col_nome: st.write(f"**{ragazzo}**")
+                                with col_stato:
+                                    stato_precedente = appello_evento.get(ragazzo, opzioni[0])
+                                    indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
+                                    stato = st.radio(f"Stato_{ragazzo}_{ev['id']}", opzioni, index=indice_default, horizontal=True, label_visibility="collapsed", key=f"p_{ragazzo}_{ev['id']}")
+                                    resoconto_corrente[ragazzo] = stato
+                                    
+                                with col_minuti:
+                                    if "Convocato" in stato and "Non" not in stato:
+                                        min_prec = minutaggio_evento.get(ragazzo, 0)
+                                        minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
+                                        resoconto_minuti[ragazzo] = minuti
+                                    else:
+                                        resoconto_minuti[ragazzo] = 0
+                                        st.write("") 
+                            
+                            st.write("")
+                            if st.button("💾 Salva Convocazioni", key=f"btn_salvap_{ev['id']}", type="primary"):
+                                st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
+                                st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
+                                salvare_dati()
+                                st.success("Convocazioni salvate! Controlla la scheda 'Modulo Ufficiale'.")
+                                st.rerun()
+
+                    with tab2:
+                        st.markdown(html_distinta, unsafe_allow_html=True)
                         st.write("")
-                        if st.button("💾 Salva Convocazioni", key=f"btn_salvap_{ev['id']}", type="primary"):
-                            st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
-                            st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
-                            salvare_dati()
-                            st.success("Convocazioni e minutaggio salvati!")
-                            st.rerun()
+                        st.download_button(
+                            label="⬇️ Scarica File del Modulo (.html)",
+                            data=html_distinta,
+                            file_name=f"Distinta_{sq_casa}_vs_{sq_trasf}.html",
+                            mime="text/html",
+                            key=f"dl_html_{ev['id']}"
+                        )
+                        st.caption("💡 Tip: Puoi scaricarlo e inviarlo, oppure fare direttamente uno screenshot di questo riquadro dal telefono!")
+
+                    with tab3:
+                        st.code(whatsapp_text, language="markdown")
+                        st.caption("💡 Clicca sull'iconcina dei foglietti in alto a destra in questo riquadro nero per copiare tutto il testo in un colpo solo e incollarlo su WhatsApp!")
 
     st.write("---")
     st.subheader("➕ Inserisci una Nuova Partita")
@@ -281,7 +350,7 @@ elif menu == "🟢 Calendario Partite":
         nuovo_luogo = st.selectbox("Dove si gioca?", ["Casa", "Trasferta"], key="new_luogo")
         
         if nuovo_luogo == "Trasferta":
-            nuovo_indirizzo = st.text_input("Indirizzo del campo (es. Via Roma 10, Milano)", key="new_indirizzo")
+            nuovo_indirizzo = st.text_input("Indirizzo del campo (es. Via Roma 10)", key="new_indirizzo")
         else:
             nuovo_indirizzo = ""
     with col2:

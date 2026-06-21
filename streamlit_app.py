@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 import json
 import os
+import base64
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
@@ -10,7 +11,6 @@ st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered"
 DB_FILE = "misterapp_db.json"
 
 def caricare_dati():
-    """Carica i dati dal file JSON se esiste, altrimenti usa dati di default."""
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r", encoding="utf-8") as f:
             dati = json.load(f)
@@ -29,9 +29,18 @@ def caricare_dati():
         }
 
 def salvare_dati():
-    """Salva i dati correnti nel file JSON."""
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(st.session_state.db, f, indent=4, ensure_ascii=False)
+
+def get_logo_html():
+    """Cerca il file stemma.png o stemma.jpg e lo converte per la distinta."""
+    for ext in ["png", "jpg", "jpeg"]:
+        if os.path.exists(f"stemma.{ext}"):
+            with open(f"stemma.{ext}", "rb") as f:
+                encoded = base64.b64encode(f.read()).decode()
+                return f"<img src='data:image/{ext};base64,{encoded}' style='max-width: 100px; max-height: 120px; object-fit: contain;'>"
+    # Se non trova l'immagine, mostra lo scudetto di default
+    return "<div style='font-size: 50px;'>🛡️</div><div style='color: red; font-weight: bold; font-size: 14px;'>USO</div><div style='color: green; font-weight: bold; font-size: 14px;'>UNITED</div>"
 
 # Inizializziamo lo stato di Streamlit
 if "db" not in st.session_state:
@@ -226,7 +235,9 @@ elif menu == "🟢 Calendario Partite":
                     convocati_list = []
                     
                     for idx, ragazzo in enumerate(st.session_state.db["ragazzi"]):
-                        stato = appello_evento.get(ragazzo, "")
+                        # MODIFICA IMPORTANTE: Se non c'è nel database, default è "Convocato" per avere la X in tabella!
+                        stato = appello_evento.get(ragazzo, "🟢 Convocato")
+                        
                         c_mark = "X" if "Convocato" in stato and "Non" not in stato else ""
                         nc_mark = "X" if "Non Convocato" in stato else ""
                         
@@ -241,15 +252,15 @@ elif menu == "🟢 Calendario Partite":
                             <td style='border: 1px solid black; padding: 5px; color: red; font-weight: bold;'>{nc_mark}</td>
                         </tr>
                         """
-                        
+                    
+                    logo_immagine = get_logo_html()
+                    
                     html_distinta = f"""
                     <div style='background-color: white; color: black; padding: 10px; font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
                         <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black;'>
                             <tr>
-                                <td rowspan='6' style='width: 30%; border: 1px solid black; vertical-align: middle;'>
-                                    <div style='font-size: 50px;'>🛡️</div>
-                                    <div style='color: red; font-weight: bold; font-size: 14px;'>USO</div>
-                                    <div style='color: green; font-weight: bold; font-size: 14px;'>UNITED</div>
+                                <td rowspan='6' style='width: 30%; border: 1px solid black; vertical-align: middle; padding: 10px;'>
+                                    {logo_immagine}
                                 </td>
                                 <td style='border: 1px solid black; color: #4CAF50; font-weight: bold; font-size: 20px; padding: 5px;'>USO UNITED 2014</td>
                             </tr>

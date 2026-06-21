@@ -11,7 +11,7 @@ st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered"
 # --- CSS PER LOOK MOBILE, MENU E TABELLE RESPONSIVE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
-    /* Colori nativi del tema di Streamlit per adattarsi alla Dark Mode */
+    /* Usiamo i colori nativi del tema di Streamlit per adattarsi perfettamente alla Dark Mode */
     .card { 
         background-color: var(--secondary-background-color); 
         color: var(--text-color);
@@ -121,8 +121,7 @@ menu = st.sidebar.radio("Navigazione", [
     "🟢 Calendario e Convocazioni", 
     "📊 Statistiche Allenamenti",
     "🏆 Statistiche Partite",
-    "⏱️ Planner Allenamento",
-    "🏃 Gestione Rosa"
+    "🏃 Anagrafica rosa"
 ])
 
 st.sidebar.write("---")
@@ -539,30 +538,10 @@ elif menu == "🏆 Statistiche Partite":
         st.table(tabella_gare)
 
 # ==========================================
-# SCHERMATA 5: PLANNER ALLENAMENTO
+# SCHERMATA 5: GESTIONE ROSA
 # ==========================================
-elif menu == "⏱️ Planner Allenamento":
-    st.header("⏱️ Planner della Seduta")
-    st.subheader("Raffronto Carico di Lavoro (Target)")
-    target_tecnico, target_tattico = 50.00, 50.00
-    col_t1, col_t2 = st.columns(2)
-    with col_t1: st.metric(label="Target Tecnico / Atletico", value=f"{target_tecnico:.2f}%")
-    with col_t2: st.metric(label="Target Tattico / Situazionale", value=f"{target_tattico:.2f}%")
-    
-    st.write("---")
-    tempo_attivazione = st.number_input("1. Attivazione / Riscaldamento (min)", min_value=0, value=15, step=5)
-    tempo_tecnico = st.number_input("2. Esercitazione Tecnica (min)", min_value=0, value=30, step=5)
-    tempo_partita = st.number_input("3. Partitina Finale (min)", min_value=0, value=25, step=5)
-    
-    durata_totale = tempo_attivazione + tempo_tecnico + tempo_partita
-    st.write("---")
-    st.info(f"⏱️ **Durata totale calcolata:** {durata_totale:.2f} minuti")
-
-# ==========================================
-# SCHERMATA 6: GESTIONE ROSA
-# ==========================================
-elif menu == "🏃 Gestione Rosa":
-    st.header("🏃 Anagrafica e Gestione Rosa")
+elif menu == "🏃 Anagrafica rosa":
+    st.header("🏃 Anagrafica rosa")
     
     st.subheader("I tuoi giocatori attuali:")
     if not st.session_state.db["ragazzi"]: 
@@ -675,7 +654,7 @@ elif menu == "🏃 Gestione Rosa":
     nuovo_ruolo_ins = st.selectbox("Ruolo:", ruoli_lista, key="nuovo_ins_ruolo")
     
     if st.button("Inserisci in Squadra"):
-        if nuovo_nome_ins.strip() != "" and nuovo_nome_ins.strip() not in st.session_state.db["ragazzi"]:
+        if Directory := nuovo_nome_ins.strip() != "" and nuovo_nome_ins.strip() not in st.session_state.db["ragazzi"]:
             nome_pulito = nuovo_nome_ins.strip()
             st.session_state.db["ragazzi"].append(nome_pulito)
             if "dettagli_ragazzi" not in st.session_state.db:

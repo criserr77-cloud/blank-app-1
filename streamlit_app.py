@@ -3,12 +3,13 @@ import datetime
 import json
 import os
 import base64
+import urllib.parse
 import streamlit.components.v1 as components
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
 
-# --- CSS PER LOOK MOBILE E MENU RESPONSIVE (DARK/LIGHT MODE) ---
+# --- CSS PER LOOK MOBILE, MENU E TABELLE RESPONSIVE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
     /* Colori nativi del tema di Streamlit per adattarsi alla Dark Mode */
@@ -418,24 +419,6 @@ elif menu == "🟢 Calendario e Convocazioni":
                     with tab2:
                         st.markdown(html_distinta, unsafe_allow_html=True)
                         st.write("")
-                        
-                        # --- NUOVO GENERATORE PDF (STAMPA NATIVA) ---
-                        html_to_print = f"""
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                        <title>Convocazioni {sq_casa} - {sq_trasf}</title>
-                        </head>
-                        <body onload="window.print()" style="padding: 20px;">
-                        {html_distinta}
-                        </body>
-                        </html>
-                        """
-                        b64_print = base64.b64encode(html_to_print.encode('utf-8')).decode('utf-8')
-                        
-                        # Tasto estrazione PDF (si appoggia al sistema di stampa del dispositivo)
-                        st.markdown(f'<a href="data:text/html;base64,{b64_print}" target="_blank" style="display:block; width:100%; text-align:center; background-color:#FF4B4B; color:white; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; margin-bottom:10px;">🖨️ Genera PDF (Stampa Modulo)</a>', unsafe_allow_html=True)
-
                         st.download_button(
                             label="⬇️ Scarica File Web (.html)",
                             data=html_distinta,
@@ -445,8 +428,10 @@ elif menu == "🟢 Calendario e Convocazioni":
                         )
 
                     with tab3:
+                        whatsapp_url = urllib.parse.quote(whatsapp_text)
+                        st.markdown(f'<a href="https://wa.me/?text={whatsapp_url}" target="_blank" style="display:block; width:100%; text-align:center; background-color:#25D366; color:white; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; margin-bottom:10px;">📲 Invia Testo su WhatsApp</a>', unsafe_allow_html=True)
                         st.code(whatsapp_text, language="markdown")
-                        st.caption("💡 Clicca sull'iconcina dei foglietti in alto a destra in questo riquadro nero per copiare tutto il testo in un colpo solo e incollarlo su WhatsApp!")
+                        st.caption("💡 **Suggerimento:** Per allegare il modulo ufficiale, scarica il file dalla scheda 'Modulo Ufficiale' e allegalo come 'Documento' direttamente nella chat WhatsApp!")
 
     st.write("---")
     st.subheader("➕ Inserisci una Nuova Partita")

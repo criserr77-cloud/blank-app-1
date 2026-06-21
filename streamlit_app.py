@@ -454,4 +454,3 @@ elif menu == "🏃 Gestione Rosa":
             salvare_dati()
             st.success(f"⚽ {nuovo_nome_ins.strip()} aggiunto alla rosa!")
             st.rerun()
-            

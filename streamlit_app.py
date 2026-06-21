@@ -14,7 +14,6 @@ def caricare_dati():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r", encoding="utf-8") as f:
             dati = json.load(f)
-            # Controllo di sicurezza per aggiornare database vecchi con la nuova funzione
             if "storico_minutaggio" not in dati:
                 dati["storico_minutaggio"] = {}
             return dati
@@ -39,6 +38,10 @@ if "db" not in st.session_state:
     st.session_state.db = caricare_dati()
     if "storico_minutaggio" not in st.session_state.db:
         st.session_state.db["storico_minutaggio"] = {}
+
+# Variabile di stato per gestire la modalità di modifica del nome
+if "edit_mode" not in st.session_state:
+    st.session_state.edit_mode = None
 
 # --- MENU LATERALE ---
 menu = st.sidebar.radio("Navigazione", [
@@ -207,7 +210,6 @@ elif menu == "🏆 Statistiche Partite":
             
             pct_conv = (convocati / totale_gare) * 100 if totale_gare > 0 else 0.00
             
-            # Calcolo minutaggio totale per questo giocatore
             min_tot = 0
             for ev_id in id_gare:
                 min_tot += st.session_state.db["storico_minutaggio"].get(str(ev_id), {}).get(ragazzo, 0)
@@ -252,23 +254,59 @@ elif menu == "🏃 Gestione Rosa":
         st.warning("La rosa è vuota!")
     else:
         for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
-            col_nome, col_cancella = st.columns([3, 1])
-            with col_nome: 
-                # Calcoliamo il minutaggio totale assoluto per l'anagrafica
-                min_tot_anagrafica = sum(st.session_state.db["storico_minutaggio"].get(ev_id, {}).get(ragazzo, 0) for ev_id in st.session_state.db["storico_minutaggio"])
-                st.write(f"• **{ragazzo}** *(⏱️ {min_tot_anagrafica}' totali in campo)*")
-            with col_cancella:
-                if st.button("Elimina", key=f"del_{ragazzo}_{i}"):
-                    st.session_state.db["ragazzi"].remove(ragazzo)
-                    salvare_dati()
-                    st.rerun()
+            
+            # Se siamo in modalità modifica per questo specifico ragazzo
+            if st.session_state.edit_mode == i:
+                col_input, col_salva, col_annulla = st.columns([2, 1, 1])
+                with col_input:
+                    nuovo_nome_mod = st.text_input("Nuovo nome", value=ragazzo, key=f"edit_input_{i}", label_visibility="collapsed")
+                with col_salva:
+                    if st.button("💾 Salva", key=f"save_btn_{i}", type="primary"):
+                        nuovo_nome_mod = nuovo_nome_mod.strip()
+                        # Procedi solo se il nome è cambiato, non è vuoto e non è già in uso
+                        if nuovo_nome_mod and nuovo_nome_mod != ragazzo and nuovo_nome_mod not in st.session_state.db["ragazzi"]:
+                            # 1. Aggiorna nome nella rosa
+                            st.session_state.db["ragazzi"][i] = nuovo_nome_mod
+                            
+                            # 2. Aggiorna lo storico presenze per non perdere i dati
+                            for ev_id, appello in st.session_state.db["storico_presenze"].items():
+                                if ragazzo in appello:
+                                    appello[nuovo_nome_mod] = appello.pop(ragazzo)
+                                    
+                            # 3. Aggiorna lo storico minutaggi
+                            for ev_id, min_dict in st.session_state.db["storico_minutaggio"].items():
+                                if ragazzo in min_dict:
+                                    min_dict[nuovo_nome_mod] = min_dict.pop(ragazzo)
+                                    
+                        st.session_state.edit_mode = None
+                        salvare_dati()
+                        st.rerun()
+                with col_annulla:
+                    if st.button("❌ Annulla", key=f"cancel_btn_{i}"):
+                        st.session_state.edit_mode = None
+                        st.rerun()
+            else:
+                # Visualizzazione standard (con tasto Modifica e tasto Elimina)
+                col_nome, col_modifica, col_cancella = st.columns([2.5, 1, 1])
+                with col_nome: 
+                    min_tot_anagrafica = sum(st.session_state.db["storico_minutaggio"].get(ev_id, {}).get(ragazzo, 0) for ev_id in st.session_state.db["storico_minutaggio"])
+                    st.write(f"• **{ragazzo}** *(⏱️ {min_tot_anagrafica}' totali in campo)*")
+                with col_modifica:
+                    if st.button("✏️ Modifica", key=f"edit_btn_{i}"):
+                        st.session_state.edit_mode = i
+                        st.rerun()
+                with col_cancella:
+                    if st.button("🗑️ Elimina", key=f"del_btn_{i}"):
+                        st.session_state.db["ragazzi"].remove(ragazzo)
+                        salvare_dati()
+                        st.rerun()
                     
     st.write("---")
     st.subheader("➕ Aggiungi un nuovo giocatore")
-    nuovo_nome = st.text_input("Nome e Cognome del ragazzo:")
+    nuovo_nome_ins = st.text_input("Nome e Cognome del ragazzo:", key="nuovo_ins_input")
     if st.button("Inserisci in Squadra"):
-        if nuovo_nome.strip() != "" and nuovo_nome.strip() not in st.session_state.db["ragazzi"]:
-            st.session_state.db["ragazzi"].append(nuovo_nome.strip())
+        if nuovo_nome_ins.strip() != "" and nuovo_nome_ins.strip() not in st.session_state.db["ragazzi"]:
+            st.session_state.db["ragazzi"].append(nuovo_nome_ins.strip())
             salvare_dati()
-            st.success(f"⚽ {nuovo_nome.strip()} aggiunto alla rosa!")
+            st.success(f"⚽ {nuovo_nome_ins.strip()} aggiunto alla rosa!")
             st.rerun()

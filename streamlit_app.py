@@ -8,10 +8,10 @@ import streamlit.components.v1 as components
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered")
 
-# --- CSS PER LOOK MOBILE, MENU E TABELLE RESPONSIVE (DARK/LIGHT MODE) ---
+# --- CSS PER LOOK MOBILE E MENU RESPONSIVE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
-    /* Usiamo i colori nativi del tema di Streamlit per adattarsi perfettamente alla Dark Mode */
+    /* Colori nativi del tema di Streamlit per adattarsi alla Dark Mode */
     .card { 
         background-color: var(--secondary-background-color); 
         color: var(--text-color);
@@ -357,7 +357,7 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
-                    # Generazione testo WhatsApp con saluto iniziale e note
+                    # Generazione testo WhatsApp
                     whatsapp_text = f"Ciao a tutti,\n\n"
                     whatsapp_text += f"⚽ *CONVOCAZIONI* ⚽\n"
                     whatsapp_text += f"⚽ *{sq_casa}-{sq_trasf}*\n"
@@ -366,7 +366,6 @@ elif menu == "🟢 Calendario e Convocazioni":
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
                     whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
                     
-                    # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
                         whatsapp_text += f"📝 *Note:*\n{nota_p}\n"
@@ -419,8 +418,26 @@ elif menu == "🟢 Calendario e Convocazioni":
                     with tab2:
                         st.markdown(html_distinta, unsafe_allow_html=True)
                         st.write("")
+                        
+                        # --- NUOVO GENERATORE PDF (STAMPA NATIVA) ---
+                        html_to_print = f"""
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                        <title>Convocazioni {sq_casa} - {sq_trasf}</title>
+                        </head>
+                        <body onload="window.print()" style="padding: 20px;">
+                        {html_distinta}
+                        </body>
+                        </html>
+                        """
+                        b64_print = base64.b64encode(html_to_print.encode('utf-8')).decode('utf-8')
+                        
+                        # Tasto estrazione PDF (si appoggia al sistema di stampa del dispositivo)
+                        st.markdown(f'<a href="data:text/html;base64,{b64_print}" target="_blank" style="display:block; width:100%; text-align:center; background-color:#FF4B4B; color:white; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; margin-bottom:10px;">🖨️ Genera PDF (Stampa Modulo)</a>', unsafe_allow_html=True)
+
                         st.download_button(
-                            label="⬇️ Scarica File del Modulo (.html)",
+                            label="⬇️ Scarica File Web (.html)",
                             data=html_distinta,
                             file_name=f"Distinta_{sq_casa}_vs_{sq_trasf}.html",
                             mime="text/html",
@@ -541,7 +558,7 @@ elif menu == "🏆 Statistiche Partite":
 # SCHERMATA 5: GESTIONE ROSA
 # ==========================================
 elif menu == "🏃 Anagrafica rosa":
-    st.header("🏃 Anagrafica rosa")
+    st.header("🏃 Anagrafica e Gestione Rosa")
     
     st.subheader("I tuoi giocatori attuali:")
     if not st.session_state.db["ragazzi"]: 
@@ -654,7 +671,7 @@ elif menu == "🏃 Anagrafica rosa":
     nuovo_ruolo_ins = st.selectbox("Ruolo:", ruoli_lista, key="nuovo_ins_ruolo")
     
     if st.button("Inserisci in Squadra"):
-        if Directory := nuovo_nome_ins.strip() != "" and nuovo_nome_ins.strip() not in st.session_state.db["ragazzi"]:
+        if nuovo_nome_ins.strip() != "" and nuovo_nome_ins.strip() not in st.session_state.db["ragazzi"]:
             nome_pulito = nuovo_nome_ins.strip()
             st.session_state.db["ragazzi"].append(nome_pulito)
             if "dettagli_ragazzi" not in st.session_state.db:

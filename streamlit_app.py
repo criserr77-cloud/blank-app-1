@@ -81,7 +81,7 @@ if menu == "🔵 Calendario Allenamenti":
                 st.write(f"### ✏️ Modifica Allenamento")
                 curr_date = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").date()
                 mod_data = st.date_input("Data", curr_date, key=f"mod_d_{ev['id']}")
-                mod_nota = st.text_input("Note/Orario", value=ev.get("nota", ""), key=f"mod_n_{ev['id']}")
+                mod_nota = st.text_area("Note/Orario", value=ev.get("nota", ""), key=f"mod_n_{ev['id']}")
                 
                 col_s, col_a = st.columns(2)
                 with col_s:
@@ -143,7 +143,7 @@ if menu == "🔵 Calendario Allenamenti":
     st.write("---")
     st.subheader("➕ Fissa un nuovo Allenamento")
     nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_all")
-    nuova_nota = st.text_input("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
+    nuova_nota = st.text_area("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
     if st.button("Aggiungi Allenamento"):
         nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
         st.session_state.db["eventi"].append({"id": nuovo_id, "data": str(nuova_data), "tipo": "Allenamento", "nota": nuova_nota})
@@ -180,7 +180,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                 with col2:
                     mod_orap = st.text_input("Ora Partita (es. 15:00)", value=ev.get("ora_partita", ""), key=f"mod_op_{ev['id']}")
                     mod_orac = st.text_input("Ora Convocazione (es. 14:00)", value=ev.get("ora_convocazione", ""), key=f"mod_oc_{ev['id']}")
-                    mod_nota = st.text_input("Note (es. Campionato)", value=ev.get("nota", ""), key=f"mod_np_{ev['id']}")
+                    mod_nota = st.text_area("Note (es. Campionato)", value=ev.get("nota", ""), key=f"mod_np_{ev['id']}")
                 
                 col_s, col_a = st.columns(2)
                 with col_s:
@@ -279,7 +279,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
-                        whatsapp_text += f"📝 *Note:* {nota_p}\n"
+                        whatsapp_text += f"📝 *Note:*\n{nota_p}\n"
                         
                     whatsapp_text += f"\n*ELENCO CONVOCATI:*\n"
                     if convocati_list:
@@ -356,7 +356,7 @@ elif menu == "🟢 Calendario e Convocazioni":
     with col2:
         nuova_orap = st.text_input("Ora Partita (es. 15:00)", key="new_orap")
         nuova_orac = st.text_input("Ora Convocazione (es. 14:00)", key="new_orac")
-        nuova_nota = st.text_input("Note (es. Campionato)", key="new_notap")
+        nuova_nota = st.text_area("Note (es. Campionato)", key="new_notap")
         
     if st.button("Aggiungi Partita a Calendario"):
         if nuovo_avversario.strip() == "":

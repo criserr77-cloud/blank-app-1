@@ -13,7 +13,11 @@ def caricare_dati():
     """Carica i dati dal file JSON se esiste, altrimenti usa dati di default."""
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            dati = json.load(f)
+            # Controllo di sicurezza per aggiornare database vecchi con la nuova funzione
+            if "storico_minutaggio" not in dati:
+                dati["storico_minutaggio"] = {}
+            return dati
     else:
         return {
             "ragazzi": ["Luca R.", "Matteo V.", "Alessandro M.", "Filippo T.", "Gabriele L.", "Tommaso N."],
@@ -21,7 +25,8 @@ def caricare_dati():
                 {"id": "1", "data": "2026-06-23", "tipo": "Allenamento", "nota": "Campo Principale - ore 17:30"},
                 {"id": "2", "data": "2026-06-27", "tipo": "Partita", "nota": "Campionato - In Trasferta ore 15:00"}
             ],
-            "storico_presenze": {} # Struttura: {"id_evento": {"Nome Ragazzo": "Stato"}}
+            "storico_presenze": {}, # Struttura: {"id_evento": {"Nome Ragazzo": "Stato"}}
+            "storico_minutaggio": {} # Struttura: {"id_evento": {"Nome Ragazzo": Minuti}}
         }
 
 def salvare_dati():
@@ -32,6 +37,8 @@ def salvare_dati():
 # Inizializziamo lo stato di Streamlit caricando i dati dal file
 if "db" not in st.session_state:
     st.session_state.db = caricare_dati()
+    if "storico_minutaggio" not in st.session_state.db:
+        st.session_state.db["storico_minutaggio"] = {}
 
 # --- MENU LATERALE ---
 menu = st.sidebar.radio("Navigazione", [
@@ -64,18 +71,26 @@ if menu == "📅 Calendario & Appelli":
             titolo_box = f"{emoji} {ev['tipo']} del {data_f} ({ev['nota']})"
             
             with st.expander(titolo_box):
-                st.write(f"#### 📋 {'Registro Presenze' if is_allenamento else 'Lista Convocazioni'}")
+                st.write(f"#### 📋 {'Registro Presenze' if is_allenamento else 'Lista Convocazioni e Minutaggio'}")
                 
                 if not st.session_state.db["ragazzi"]:
                     st.warning("Non ci sono giocatori in rosa. Vai alla sezione 'Gestione Rosa'.")
                 else:
                     appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
+                    minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
+                    
                     resoconto_corrente = {}
+                    resoconto_minuti = {}
                     
                     opzioni = ["🟢 Presente", "🔴 Assente", "🟡 Infortunato"] if is_allenamento else ["🟢 Convocato", "🔴 Non Convocato"]
                     
                     for ragazzo in st.session_state.db["ragazzi"]:
-                        col_nome, col_stato = st.columns([1, 2])
+                        # Se è partita, creiamo 3 colonne per far spazio all'inserimento dei minuti
+                        if is_allenamento:
+                            col_nome, col_stato = st.columns([1, 2])
+                        else:
+                            col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
+                            
                         with col_nome:
                             st.write(f"**{ragazzo}**")
                         with col_stato:
@@ -91,10 +106,23 @@ if menu == "📅 Calendario & Appelli":
                                 key=f"p_{ragazzo}_{ev['id']}"
                             )
                             resoconto_corrente[ragazzo] = stato
+                            
+                        # Selezionatore Minuti (Solo per le partite)
+                        if not is_allenamento:
+                            with col_minuti:
+                                if "Convocato" in stato and "Non" not in stato:
+                                    min_prec = minutaggio_evento.get(ragazzo, 0)
+                                    minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
+                                    resoconto_minuti[ragazzo] = minuti
+                                else:
+                                    resoconto_minuti[ragazzo] = 0
+                                    st.write("") # Mantiene l'allineamento pulito
                     
                     st.write("")
                     if st.button("💾 Salva Registro", key=f"btn_salva_{ev['id']}", type="primary"):
                         st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
+                        if not is_allenamento:
+                            st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
                         salvare_dati()
                         st.success("Dati archiviati con successo!")
                         st.rerun()
@@ -180,11 +208,18 @@ elif menu == "🏆 Statistiche Partite":
                     elif "Non Convocato" in stato: non_convocati += 1
             
             pct_conv = (convocati / totale_gare) * 100 if totale_gare > 0 else 0.00
+            
+            # Calcolo minutaggio totale per questo giocatore
+            min_tot = 0
+            for ev_id in id_gare:
+                min_tot += st.session_state.db["storico_minutaggio"].get(str(ev_id), {}).get(ragazzo, 0)
+
             tabella_gare.append({
                 "Giocatore": ragazzo,
                 "🟢 Convocati": convocati,
                 "🔴 Non Convocati": non_convocati,
-                "📈 % Convocazioni": f"{pct_conv:.2f}%"
+                "📈 % Convocazioni": f"{pct_conv:.2f}%",
+                "⏱️ Min. Giocati": min_tot
             })
         st.table(tabella_gare)
 
@@ -212,27 +247,10 @@ elif menu == "⏱️ Planner Allenamento":
 # SCHERMATA 5: GESTIONE ROSA
 # ==========================================
 elif menu == "🏃 Gestione Rosa":
-    st.header("🏃 Gestione Rosa Giocatori")
+    st.header("🏃 Anagrafica e Gestione Rosa")
     
     st.subheader("I tuoi giocatori attuali:")
     if not st.session_state.db["ragazzi"]: 
         st.warning("La rosa è vuota!")
     else:
-        for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
-            col_nome, col_cancella = st.columns([3, 1])
-            with col_nome: st.write(f"• **{ragazzo}**")
-            with col_cancella:
-                if st.button("Elimina", key=f"del_{ragazzo}_{i}"):
-                    st.session_state.db["ragazzi"].remove(ragazzo)
-                    salvare_dati()
-                    st.rerun()
-                    
-    st.write("---")
-    st.subheader("➕ Aggiungi un nuovo giocatore")
-    nuovo_nome = st.text_input("Nome e Cognome del ragazzo:")
-    if st.button("Inserisci in Squadra"):
-        if nuovo_nome.strip() != "" and nuovo_nome.strip() not in st.session_state.db["ragazzi"]:
-            st.session_state.db["ragazzi"].append(nuovo_nome.strip())
-            salvare_dati()
-            st.success(f"⚽ {nuovo_nome.strip()} aggiunto alla rosa!")
-            st.rerun()
+        for i, ragazzo in enumerate(list

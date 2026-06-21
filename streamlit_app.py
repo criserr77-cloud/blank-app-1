@@ -80,7 +80,7 @@ if menu == "🔵 Calendario Allenamenti":
             if st.session_state.edit_evento == ev["id"]:
                 st.write(f"### ✏️ Modifica Allenamento")
                 curr_date = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").date()
-                mod_data = st.date_input("Data", curr_date, key=f"mod_d_{ev['id']}")
+                mod_data = st.date_input("Data", curr_date, key=f"mod_d_{ev['id']}", format="DD/MM/YYYY")
                 mod_nota = st.text_area("Note/Orario", value=ev.get("nota", ""), key=f"mod_n_{ev['id']}")
                 
                 col_s, col_a = st.columns(2)
@@ -142,7 +142,7 @@ if menu == "🔵 Calendario Allenamenti":
 
     st.write("---")
     st.subheader("➕ Fissa un nuovo Allenamento")
-    nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_all")
+    nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_all", format="DD/MM/YYYY")
     nuova_nota = st.text_area("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
     if st.button("Aggiungi Allenamento"):
         nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
@@ -169,7 +169,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    mod_data = st.date_input("Data", curr_date, key=f"mod_dp_{ev['id']}")
+                    mod_data = st.date_input("Data", curr_date, key=f"mod_dp_{ev['id']}", format="DD/MM/YYYY")
                     mod_avv = st.text_input("Avversario", value=ev.get("avversario", ""), key=f"mod_avv_{ev['id']}")
                     mod_luogo = st.selectbox("Luogo", ["Casa", "Trasferta"], index=0 if ev.get("luogo", "Casa")=="Casa" else 1, key=f"mod_lu_{ev['id']}")
                     
@@ -345,7 +345,7 @@ elif menu == "🟢 Calendario e Convocazioni":
     st.subheader("➕ Inserisci una Nuova Partita")
     col1, col2 = st.columns(2)
     with col1:
-        nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_p")
+        nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_p", format="DD/MM/YYYY")
         nuovo_avversario = st.text_input("Avversario (es. Real City)", key="new_avv")
         nuovo_luogo = st.selectbox("Dove si gioca?", ["Casa", "Trasferta"], key="new_luogo")
         

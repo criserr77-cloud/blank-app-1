@@ -95,7 +95,7 @@ menu = st.sidebar.radio("Navigazione", [
 st.sidebar.write("---")
 st.sidebar.info("MisterApp Cloud - Attiva")
 
-# --- TRUCCO PER CHIUDERE IL MENU SU SMARTPHONE ---
+# --- TRUCCO MIGLIORATO PER CHIUDERE IL MENU SU SMARTPHONE ---
 if "last_menu" not in st.session_state:
     st.session_state.last_menu = menu
 
@@ -104,16 +104,24 @@ if st.session_state.last_menu != menu:
     components.html(
         """
         <script>
-        // Controlla se la larghezza dello schermo è da smartphone
-        if (window.parent.innerWidth <= 768) {
-            var closeBtn = window.parent.document.querySelector('[data-testid="stSidebarCollapseButton"]');
-            if (!closeBtn) {
-                closeBtn = window.parent.document.querySelector('[data-testid="stSidebar"] button');
+        // Aspettiamo 300 millisecondi che la pagina carichi
+        setTimeout(function() {
+            var doc = window.parent.document;
+            // Controlla se siamo su uno schermo piccolo (smartphone)
+            if (window.parent.innerWidth <= 768) {
+                // Cerca il bottone con la "X" per chiudere la sidebar
+                var closeButtons = doc.querySelectorAll('button[aria-label="Close"]');
+                closeButtons.forEach(function(btn) {
+                    btn.click();
+                });
+                
+                // Cerca anche il bottone standard di chiusura di Streamlit per sicurezza
+                var standardClose = doc.querySelector('[data-testid="stSidebarCollapseButton"]');
+                if (standardClose) {
+                    standardClose.click();
+                }
             }
-            if (closeBtn) {
-                closeBtn.click();
-            }
-        }
+        }, 300);
         </script>
         """,
         height=0, width=0

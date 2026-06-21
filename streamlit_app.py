@@ -267,7 +267,7 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
-                    # Generazione testo WhatsApp con le Note
+                    # Generazione testo WhatsApp con le Note e i Cuori
                     whatsapp_text = f"🟢 *CONVOCAZIONI USO UNITED 2014* 🟢\n"
                     whatsapp_text += f"⚽ *Partita:* {sq_casa} vs {sq_trasf}\n"
                     whatsapp_text += f"📅 *Data:* {data_f}\n"
@@ -286,7 +286,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                             whatsapp_text += f"✅ {c}\n"
                     else:
                         whatsapp_text += "*(Nessun convocato ancora selezionato)*\n"
-                    whatsapp_text += "\n*Forza USO UNITED!* 🛡️"
+                    whatsapp_text += "\n*Forza USO UNITED!* 💚💙"
 
                     # SCHEDE DI NAVIGAZIONE
                     tab1, tab2, tab3 = st.tabs(["⚙️ Compila Elenco", "📄 Modulo Ufficiale", "📱 Messaggio WhatsApp"])

@@ -139,7 +139,7 @@ if menu == "🔵 Calendario Allenamenti":
     nuova_nota = st.text_input("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
     if st.button("Aggiungi Allenamento"):
         nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
-        st.session_state.db["eventi"].append({"id": புதிய_id, "data": str(nuova_data), "tipo": "Allenamento", "nota": nuova_nota})
+        st.session_state.db["eventi"].append({"id": nuovo_id, "data": str(nuova_data), "tipo": "Allenamento", "nota": nuova_nota})
         salvare_dati()
         st.rerun()
 
@@ -147,7 +147,7 @@ if menu == "🔵 Calendario Allenamenti":
 # SCHERMATA 2: PARTITE
 # ==========================================
 elif menu == "🟢 Calendario Partite":
-    st.header("🟢 Calendario e Convocazioni Partites")
+    st.header("🟢 Calendario e Convocazioni Partite")
     
     st.subheader("Le tue Gare:")
     eventi_partita = [ev for ev in st.session_state.db["eventi"] if ev["tipo"] in ["Partita", "Torneo"]]
@@ -280,7 +280,6 @@ elif menu == "🟢 Calendario Partite":
         nuovo_avversario = st.text_input("Avversario (es. Real City)", key="new_avv")
         nuovo_luogo = st.selectbox("Dove si gioca?", ["Casa", "Trasferta"], key="new_luogo")
         
-        # Mostra l'inserimento dell'indirizzo solo se è Trasferta
         if nuovo_luogo == "Trasferta":
             nuovo_indirizzo = st.text_input("Indirizzo del campo (es. Via Roma 10, Milano)", key="new_indirizzo")
         else:

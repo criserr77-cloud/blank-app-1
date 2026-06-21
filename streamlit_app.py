@@ -47,6 +47,8 @@ def caricare_dati():
             dati = json.load(f)
             if "storico_minutaggio" not in dati:
                 dati["storico_minutaggio"] = {}
+            if "dettagli_ragazzi" not in dati:
+                dati["dettagli_ragazzi"] = {}
             return dati
     else:
         return {
@@ -56,7 +58,8 @@ def caricare_dati():
                 {"id": "2", "data": "2026-06-27", "tipo": "Partita", "avversario": "Real City", "luogo": "Trasferta", "ora_partita": "15:00", "ora_convocazione": "14:00", "indirizzo": "Via Stadio 5, Torino", "nota": "Campionato"}
             ],
             "storico_presenze": {},
-            "storico_minutaggio": {}
+            "storico_minutaggio": {},
+            "dettagli_ragazzi": {}
         }
 
 def salvare_dati():
@@ -76,6 +79,8 @@ if "db" not in st.session_state:
     st.session_state.db = caricare_dati()
     if "storico_minutaggio" not in st.session_state.db:
         st.session_state.db["storico_minutaggio"] = {}
+    if "dettagli_ragazzi" not in st.session_state.db:
+        st.session_state.db["dettagli_ragazzi"] = {}
 
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = None
@@ -95,7 +100,7 @@ menu = st.sidebar.radio("Navigazione", [
 st.sidebar.write("---")
 st.sidebar.info("MisterApp Cloud - Attiva")
 
-# --- TRUCCO MIGLIORATO PER CHIUDERE IL MENU SU SMARTPHONE ---
+# --- TRUCCO PER CHIUDERE IL MENU SU SMARTPHONE ---
 if "last_menu" not in st.session_state:
     st.session_state.last_menu = menu
 
@@ -104,18 +109,13 @@ if st.session_state.last_menu != menu:
     components.html(
         """
         <script>
-        // Aspettiamo 300 millisecondi che la pagina carichi
         setTimeout(function() {
             var doc = window.parent.document;
-            // Controlla se siamo su uno schermo piccolo (smartphone)
             if (window.parent.innerWidth <= 768) {
-                // Cerca il bottone con la "X" per chiudere la sidebar
                 var closeButtons = doc.querySelectorAll('button[aria-label="Close"]');
                 closeButtons.forEach(function(btn) {
                     btn.click();
                 });
-                
-                // Cerca anche il bottone standard di chiusura di Streamlit per sicurezza
                 var standardClose = doc.querySelector('[data-testid="stSidebarCollapseButton"]');
                 if (standardClose) {
                     standardClose.click();
@@ -427,7 +427,7 @@ elif menu == "🟢 Calendario e Convocazioni":
         else:
             nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
             st.session_state.db["eventi"].append({
-                "id": nuovo_id, "data": str(nuova_data), "tipo": "Partita", 
+                "id": nuevo_id, "data": str(nuova_data), "tipo": "Partita", 
                 "avversario": nuovo_avversario, "luogo": nuovo_luogo, 
                 "ora_partita": nuova_orap, "ora_convocazione": nuova_orac, 
                 "indirizzo": nuovo_indirizzo, "nota": nuova_nota
@@ -528,7 +528,7 @@ elif menu == "⏱️ Planner Allenamento":
     
     durata_totale = tempo_attivazione + tempo_tecnico + tempo_partita
     st.write("---")
-    st.info(f"⏱️ **Durata totale calcolata:** {durata_totale:.2f} minuti")
+    st.info(f"⏱️ **Durata totale calcolata:** {durata_totale:.2f} Industrial metal metal target protocol minuti")
 
 # ==========================================
 # SCHERMATA 6: GESTIONE ROSA
@@ -540,19 +540,40 @@ elif menu == "🏃 Gestione Rosa":
     if not st.session_state.db["ragazzi"]: 
         st.warning("La rosa è vuota!")
     else:
-        id_allenamenti = [ev["id"] for ev in st.session_state.db["eventi"] if ev["tipo"] == "Allenamento"]
-        totale_allenamenti = sum(1 for ev_id in st.session_state.db["storico_presenze"] if ev_id in id_allenamenti)
+        if "dettagli_ragazzi" not in st.session_state.db:
+            st.session_state.db["dettagli_ragazzi"] = {}
+            
+        ruoli_lista = ["portiere", "difensore centrale", "difensore esterno", "centrocampista centrale", "centrocampista esterno", "attaccante centrale", "attaccante esterno"]
         
         for i, ragazzo in enumerate(list(st.session_state.db["ragazzi"])):
             if st.session_state.edit_mode == i:
-                col_input, col_salva, col_annulla = st.columns([2, 1, 1])
-                with col_input:
-                    nuovo_nome_mod = st.text_input("Nuovo nome", value=ragazzo, key=f"edit_input_{i}", label_visibility="collapsed")
+                dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {"data_nascita": "2014-01-01", "ruolo": "portiere"})
+                try:
+                    dob_val = datetime.datetime.strptime(dettagli.get("data_nascita", "2014-01-01"), "%Y-%m-%d").date()
+                except:
+                    dob_val = datetime.date(2014, 1, 1)
+                    
+                nuovo_nome_mod = st.text_input("Nome", value=ragazzo, key=f"edit_input_{i}")
+                nuova_dob_mod = st.date_input("Data di Nascita", value=dob_val, format="DD/MM/YYYY", key=f"edit_dob_{i}")
+                
+                curr_ruolo = dettagli.get("ruolo", "portiere")
+                ruolo_idx = ruoli_lista.index(curr_ruolo) if curr_ruolo in ruoli_lista else 0
+                nuovo_ruolo_mod = st.selectbox("Ruolo", ruoli_lista, index=ruolo_idx, key=f"edit_ruolo_{i}")
+                
+                col_salva, col_annulla = st.columns(2)
                 with col_salva:
                     if st.button("💾 Salva", key=f"save_btn_{i}", type="primary"):
                         nuovo_nome_mod = nuovo_nome_mod.strip()
-                        if nuovo_nome_mod and nuovo_nome_mod != ragazzo and nuovo_nome_mod not in st.session_state.db["ragazzi"]:
+                        if nuovo_nome_mod:
+                            if nuovo_nome_mod != ragazzo and ragazzo in st.session_state.db["dettagli_ragazzi"]:
+                                st.session_state.db["dettagli_ragazzi"].pop(ragazzo, None)
+                            
                             st.session_state.db["ragazzi"][i] = nuovo_nome_mod
+                            st.session_state.db["dettagli_ragazzi"][nuovo_nome_mod] = {
+                                "data_nascita": str(nuova_dob_mod),
+                                "ruolo": nuovo_ruolo_mod
+                            }
+                            
                             for ev_id, appello in st.session_state.db["storico_presenze"].items():
                                 if ragazzo in appello: appello[nuovo_nome_mod] = appello.pop(ragazzo)
                             for ev_id, min_dict in st.session_state.db["storico_minutaggio"].items():
@@ -567,16 +588,16 @@ elif menu == "🏃 Gestione Rosa":
             else:
                 col_nome, col_modifica, col_cancella = st.columns([2.5, 1, 1])
                 with col_nome: 
-                    min_tot_anagrafica = sum(st.session_state.db["storico_minutaggio"].get(ev_id, {}).get(ragazzo, 0) for ev_id in st.session_state.db["storico_minutaggio"])
+                    dettagli = st.session_state.db["dettagli_ragazzi"].get(ragazzo, {})
+                    dob_str = "---"
+                    if "data_nascita" in dettagli:
+                        try:
+                            dob_str = datetime.datetime.strptime(dettagli["data_nascita"], "%Y-%m-%d").strftime("%d/%m/%Y")
+                        except:
+                            dob_str = dettagli["data_nascita"]
+                    ruolo_str = dettagli.get("ruolo", "---")
                     
-                    presenti = 0
-                    for ev_id, appello in st.session_state.db["storico_presenze"].items():
-                        if ev_id in id_allenamenti:
-                            if "Presente" in appello.get(ragazzo, ""):
-                                presenti += 1
-                    pct_allenamenti = (presenti / totale_allenamenti) * 100 if totale_allenamenti > 0 else 0.00
-                    
-                    st.write(f"• **{ragazzo}** *(⏱️ {min_tot_anagrafica}' totali | 📈 {pct_allenamenti:.2f}% presenze All.)*")
+                    st.write(f"• **{ragazzo}** *(📅 Nascita: {dob_str} | 🏃 Ruolo: {ruolo_str})*")
                 with col_modifica:
                     if st.button("✏️ Modifica", key=f"edit_btn_{i}"):
                         st.session_state.edit_mode = i
@@ -584,15 +605,27 @@ elif menu == "🏃 Gestione Rosa":
                 with col_cancella:
                     if st.button("🗑️ Elimina", key=f"del_btn_{i}"):
                         st.session_state.db["ragazzi"].remove(ragazzo)
+                        st.session_state.db["dettagli_ragazzi"].pop(ragazzo, None)
                         salvare_dati()
                         st.rerun()
                     
     st.write("---")
     st.subheader("➕ Aggiungi un nuovo giocatore")
     nuovo_nome_ins = st.text_input("Nome e Cognome del ragazzo:", key="nuovo_ins_input")
+    nuova_dob_ins = st.date_input("Data di Nascita:", value=datetime.date(2014, 1, 1), format="DD/MM/YYYY", key="nuovo_ins_dob")
+    ruoli_lista = ["portiere", "difensore centrale", "difensore esterno", "centrocampista centrale", "centrocampista esterno", "attaccante centrale", "attaccante esterno"]
+    nuovo_ruolo_ins = st.selectbox("Ruolo:", ruoli_lista, key="nuovo_ins_ruolo")
+    
     if st.button("Inserisci in Squadra"):
         if nuovo_nome_ins.strip() != "" and nuovo_nome_ins.strip() not in st.session_state.db["ragazzi"]:
-            st.session_state.db["ragazzi"].append(nuovo_nome_ins.strip())
+            nome_pulito = nuovo_nome_ins.strip()
+            st.session_state.db["ragazzi"].append(nome_pulito)
+            if "dettagli_ragazzi" not in st.session_state.db:
+                st.session_state.db["dettagli_ragazzi"] = {}
+            st.session_state.db["dettagli_ragazzi"][nome_pulito] = {
+                "data_nascita": str(nuova_dob_ins),
+                "ruolo": nuovo_ruolo_ins
+            }
             salvare_dati()
-            st.success(f"⚽ {nuovo_nome_ins.strip()} aggiunto alla rosa!")
+            st.success(f"⚽ {nome_pulito} aggiunto alla rosa!")
             st.rerun()

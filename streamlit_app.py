@@ -81,7 +81,7 @@ if menu == "🔵 Calendario Allenamenti":
                 st.write(f"### ✏️ Modifica Allenamento")
                 curr_date = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").date()
                 mod_data = st.date_input("Data", curr_date, key=f"mod_d_{ev['id']}")
-                mod_nota = st.text_input("Note/Orario", value=ev.get("nota", ""), key=f"mod_n_{ev['id']}")
+                mod_nota = st.text_area("Note/Orario", value=ev.get("nota", ""), key=f"mod_n_{ev['id']}")
                 
                 col_s, col_a = st.columns(2)
                 with col_s:
@@ -143,7 +143,7 @@ if menu == "🔵 Calendario Allenamenti":
     st.write("---")
     st.subheader("➕ Fissa un nuovo Allenamento")
     nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_all")
-    nuova_nota = st.text_input("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
+    nuova_nota = st.text_area("Orario e Luogo (es. '17:30 Campo B')", key="new_nota_all")
     if st.button("Aggiungi Allenamento"):
         nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
         st.session_state.db["eventi"].append({"id": nuovo_id, "data": str(nuova_data), "tipo": "Allenamento", "nota": nuova_nota})
@@ -180,7 +180,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                 with col2:
                     mod_orap = st.text_input("Ora Partita (es. 15:00)", value=ev.get("ora_partita", ""), key=f"mod_op_{ev['id']}")
                     mod_orac = st.text_input("Ora Convocazione (es. 14:00)", value=ev.get("ora_convocazione", ""), key=f"mod_oc_{ev['id']}")
-                    mod_nota = st.text_input("Note (es. Campionato)", value=ev.get("nota", ""), key=f"mod_np_{ev['id']}")
+                    mod_nota = st.text_area("Note (es. Campionato)", value=ev.get("nota", ""), key=f"mod_np_{ev['id']}")
                 
                 col_s, col_a = st.columns(2)
                 with col_s:
@@ -284,49 +284,98 @@ elif menu == "🟢 Calendario e Convocazioni":
                         whatsapp_text += f"✅ {c}\n"
                     whatsapp_text += "\n*Forza USO UNITED!* 💚💙"
 
-                    # SCHEDE
+                    # SCHEDE DI NAVIGAZIONE
                     tab1, tab2, tab3 = st.tabs(["⚙️ Compila", "📄 Modulo", "📱 WhatsApp"])
                     
                     with tab1:
-                        resoconto_corrente = {}
-                        resoconto_minuti = {}
-                        for ragazzo in st.session_state.db["ragazzi"]:
-                            col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
-                            with col_nome: st.write(f"**{ragazzo}**")
-                            with col_stato:
-                                stato = st.radio("S", ["🟢 Convocato", "🔴 Non Convocato"], index=0 if appello_evento.get(ragazzo, "🟢 Convocato") != "🔴 Non Convocato" else 1, horizontal=True, label_visibility="collapsed", key=f"p_{ragazzo}_{ev['id']}")
-                                resoconto_corrente[ragazzo] = stato
-                            with col_minuti:
-                                if "Convocato" in stato:
-                                    minuti = st.number_input("Min", min_value=0, max_value=150, value=minutaggio_evento.get(ragazzo, 0), step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
-                                    resoconto_minuti[ragazzo] = minuti
-                        if st.button("💾 Salva", key=f"btn_salvap_{ev['id']}", type="primary"):
-                            st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
-                            st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
-                            salvare_dati()
-                            st.rerun()
+                        if not st.session_state.db["ragazzi"]:
+                            st.warning("Rosa vuota.")
+                        else:
+                            resoconto_corrente = {}
+                            resoconto_minuti = {}
+                            opzioni = ["🟢 Convocato", "🔴 Non Convocato"]
+                            
+                            for ragazzo in st.session_state.db["ragazzi"]:
+                                col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
+                                with col_nome: st.write(f"**{ragazzo}**")
+                                with col_stato:
+                                    stato_precedente = appello_evento.get(ragazzo, opzioni[0])
+                                    indice_default = opzioni.index(stato_precedente) if stato_precedente in opzioni else 0
+                                    stato = st.radio(f"Stato_{ragazzo}_{ev['id']}", opzioni, index=indice_default, horizontal=True, label_visibility="collapsed", key=f"p_{ragazzo}_{ev['id']}")
+                                    resoconto_corrente[ragazzo] = stato
+                                    
+                                with col_minuti:
+                                    if "Convocato" in stato and "Non" not in stato:
+                                        min_prec = minutaggio_evento.get(ragazzo, 0)
+                                        minuti = st.number_input("Min", min_value=0, max_value=150, value=min_prec, step=1, label_visibility="collapsed", key=f"m_{ragazzo}_{ev['id']}")
+                                        resoconto_minuti[ragazzo] = minuti
+                                    else:
+                                        resoconto_minuti[ragazzo] = 0
+                                        st.write("") 
+                            
+                            st.write("")
+                            if st.button("💾 Salva Convocazioni", key=f"btn_salvap_{ev['id']}", type="primary"):
+                                st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
+                                st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
+                                salvare_dati()
+                                st.success("Convocazioni salvate! Controlla la scheda 'Modulo Ufficiale'.")
+                                st.rerun()
 
                     with tab2:
                         st.markdown(html_distinta, unsafe_allow_html=True)
+                        st.write("")
+                        st.download_button(
+                            label="⬇️ Scarica File del Modulo (.html)",
+                            data=html_distinta,
+                            file_name=f"Distinta_{sq_casa}_vs_{sq_trasf}.html",
+                            mime="text/html",
+                            key=f"dl_html_{ev['id']}"
+                        )
+
                     with tab3:
-                        st.code(whatsapp_text)
+                        st.code(whatsapp_text, language="markdown")
+                        st.caption("💡 Clicca sull'iconcina dei foglietti in alto a destra per copiare!")
 
     st.write("---")
-    st.subheader("➕ Inserisci Nuova Partita")
-    # (Codice di inserimento)
-    if st.button("Aggiungi Partita"):
-        nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
-        st.session_state.db["eventi"].append({"id": nuovo_id, "data": str(datetime.date.today()), "tipo": "Partita", "avversario": "Nuova Gara"})
-        salvare_dati()
-        st.rerun()
+    st.subheader("➕ Inserisci una Nuova Partita")
+    col1, col2 = st.columns(2)
+    with col1:
+        nuova_data = st.date_input("Data", datetime.date.today(), key="new_data_p")
+        nuovo_avversario = st.text_input("Avversario (es. Real City)", key="new_avv")
+        nuovo_luogo = st.selectbox("Dove si gioca?", ["Casa", "Trasferta"], key="new_luogo")
+        
+        if nuovo_luogo == "Trasferta":
+            nuovo_indirizzo = st.text_input("Indirizzo del campo (es. Via Roma 10)", key="new_indirizzo")
+        else:
+            nuovo_indirizzo = ""
+    with col2:
+        nuova_orap = st.text_input("Ora Partita (es. 15:00)", key="new_orap")
+        nuova_orac = st.text_input("Ora Convocazione (es. 14:00)", key="new_orac")
+        nuova_nota = st.text_area("Note (es. Campionato)", key="new_notap")
+        
+    if st.button("Aggiungi Partita a Calendario"):
+        if nuovo_avversario.strip() == "":
+            st.error("Inserisci il nome dell'avversario!")
+        else:
+            nuovo_id = str(int(max([int(e["id"]) for e in st.session_state.db["eventi"]], default=0)) + 1)
+            st.session_state.db["eventi"].append({
+                "id": nuovo_id, "data": str(nuova_data), "tipo": "Partita", 
+                "avversario": nuovo_avversario, "luogo": nuovo_luogo, 
+                "ora_partita": nuova_orap, "ora_convocazione": nuova_orac, 
+                "indirizzo": nuovo_indirizzo, "nota": nuova_nota
+            })
+            salvare_dati()
+            st.rerun()
 
-# [ ... SEZIONI STATISTICHE E ROSA INVARIATE ...]
+# ==========================================
+# SCHERMATA 3, 4, 5, 6
+# ==========================================
 elif menu == "📊 Statistiche Allenamenti":
     st.header("📊 Statistiche Allenamenti")
 elif menu == "🏆 Statistiche Partite":
-    st.header("🏆 Statistiche Partite")
+    st.header("🏆 Statistiche Convocazioni Partite")
 elif menu == "⏱️ Planner Allenamento":
-    st.header("⏱️ Planner")
+    st.header("⏱️ Planner della Seduta")
 elif menu == "🏃 Gestione Rosa":
-    st.header("🏃 Gestione Rosa")
+    st.header("🏃 Anagrafica e Gestione Rosa")
     for r in st.session_state.db["ragazzi"]: st.write(f"• {r}")

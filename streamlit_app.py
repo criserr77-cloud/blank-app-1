@@ -112,13 +112,15 @@ def get_logo_html():
                 return f"<img src='data:image/{ext};base64,{encoded}' style='max-width: 100px; max-height: 120px; object-fit: contain;'>"
     return "<div style='font-size: 50px;'>🛡️</div><div style='color: red; font-weight: bold; font-size: 14px;'>USO</div><div style='color: green; font-weight: bold; font-size: 14px;'>UNITED</div>"
 
-# Inizializziamo lo stato di Streamlit
+# Inizializziamo lo stato di Streamlit e FORZIAMO I CONTROLLI CHIAVI
 if "db" not in st.session_state:
     st.session_state.db = caricare_dati()
-    if "storico_minutaggio" not in st.session_state.db: st.session_state.db["storico_minutaggio"] = {}
-    if "dettagli_ragazzi" not in st.session_state.db: st.session_state.db["dettagli_ragazzi"] = {}
-    if "storico_gol" not in st.session_state.db: st.session_state.db["storico_gol"] = {}
-    if "storico_risultati" not in st.session_state.db: st.session_state.db["storico_risultati"] = {}
+
+# Controlli di sicurezza fondamentali se la memoria (session_state) era già attiva con una versione vecchia
+if "storico_minutaggio" not in st.session_state.db: st.session_state.db["storico_minutaggio"] = {}
+if "dettagli_ragazzi" not in st.session_state.db: st.session_state.db["dettagli_ragazzi"] = {}
+if "storico_gol" not in st.session_state.db: st.session_state.db["storico_gol"] = {}
+if "storico_risultati" not in st.session_state.db: st.session_state.db["storico_risultati"] = {}
 
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = None
@@ -343,6 +345,8 @@ elif menu == "🟢 Calendario e Convocazioni":
                             st.session_state.db["eventi"] = [e for e in st.session_state.db["eventi"] if e["id"] != ev["id"]]
                             if ev["id"] in st.session_state.db["storico_presenze"]: del st.session_state.db["storico_presenze"][ev["id"]]
                             if ev["id"] in st.session_state.db["storico_minutaggio"]: del st.session_state.db["storico_minutaggio"][ev["id"]]
+                            if ev["id"] in st.session_state.db["storico_gol"]: del st.session_state.db["storico_gol"][ev["id"]]
+                            if ev["id"] in st.session_state.db["storico_risultati"]: del st.session_state.db["storico_risultati"][ev["id"]]
                             salvare_dati()
                             st.rerun()
                     
@@ -395,7 +399,7 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
-                    # Generazione testo WhatsApp
+                    # Generazione testo WhatsApp con saluto iniziale e note
                     whatsapp_text = f"Ciao a tutti,\n\n"
                     whatsapp_text += f"⚽ *CONVOCAZIONI* ⚽\n"
                     whatsapp_text += f"⚽ *{sq_casa}-{sq_trasf}*\n"
@@ -404,6 +408,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
                     whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
                     
+                    # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
                         whatsapp_text += f"📝 *Note:*\n{nota_p}\n"
@@ -664,6 +669,9 @@ elif menu == "🏃 Anagrafica rosa":
                                 if ragazzo in appello: appello[nuovo_nome_mod] = appello.pop(ragazzo)
                             for ev_id, min_dict in st.session_state.db["storico_minutaggio"].items():
                                 if ragazzo in min_dict: min_dict[nuovo_nome_mod] = min_dict.pop(ragazzo)
+                            for ev_id, gol_dict in st.session_state.db["storico_gol"].items():
+                                if ragazzo in gol_dict: gol_dict[nuovo_nome_mod] = gol_dict.pop(ragazzo)
+                                
                         st.session_state.edit_mode = None
                         salvare_dati()
                         st.rerun()

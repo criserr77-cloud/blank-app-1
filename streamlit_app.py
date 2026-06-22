@@ -12,7 +12,7 @@ st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered"
 # --- CSS PER LOOK MOBILE E MENU RESPONSIVE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
-    /* Colori nativi del tema di Streamlit per adattarsi alla Dark Mode */
+    /* Usiamo i colori nativi del tema di Streamlit per adattarsi perfettamente alla Dark Mode */
     .card { 
         background-color: var(--secondary-background-color); 
         color: var(--text-color);
@@ -78,6 +78,10 @@ def caricare_dati():
                 dati["storico_minutaggio"] = {}
             if "dettagli_ragazzi" not in dati:
                 dati["dettagli_ragazzi"] = {}
+            if "storico_gol" not in dati:
+                dati["storico_gol"] = {}
+            if "storico_risultati" not in dati:
+                dati["storico_risultati"] = {}
             return dati
     else:
         return {
@@ -88,7 +92,9 @@ def caricare_dati():
             ],
             "storico_presenze": {},
             "storico_minutaggio": {},
-            "dettagli_ragazzi": {}
+            "dettagli_ragazzi": {},
+            "storico_gol": {},
+            "storico_risultati": {}
         }
 
 def salvare_dati():
@@ -110,6 +116,10 @@ if "db" not in st.session_state:
         st.session_state.db["storico_minutaggio"] = {}
     if "dettagli_ragazzi" not in st.session_state.db:
         st.session_state.db["dettagli_ragazzi"] = {}
+    if "storico_gol" not in st.session_state.db:
+        st.session_state.db["storico_gol"] = {}
+    if "storico_risultati" not in st.session_state.db:
+        st.session_state.db["storico_risultati"] = {}
 
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = None
@@ -207,7 +217,6 @@ if menu == "🔵 Calendario Allenamenti":
                     
                     st.write("---")
                     
-                    # Nuova struttura a Schede (Tabs) come per le Partite
                     tab1, tab2 = st.tabs(["📋 Registro Presenze", "📱 Messaggio WhatsApp"])
                     
                     with tab1:
@@ -235,7 +244,6 @@ if menu == "🔵 Calendario Allenamenti":
                                 st.rerun()
                                 
                     with tab2:
-                        # Generazione testo WhatsApp per l'allenamento
                         whatsapp_text_all = f"Ciao a tutti,\n\n"
                         whatsapp_text_all += f"🏃‍♂️ *PROSSIMO ALLENAMENTO* 🏃‍♂️\n"
                         whatsapp_text_all += f"📅 *Data:* {data_f}\n"
@@ -343,6 +351,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     
                     appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
                     minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
+                    gol_evento = st.session_state.db["storico_gol"].get(ev["id"], {})
                     
                     sq_casa = "USO UNITED" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
                     sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED"
@@ -416,12 +425,27 @@ elif menu == "🟢 Calendario e Convocazioni":
                         if not st.session_state.db["ragazzi"]:
                             st.warning("Rosa vuota.")
                         else:
+                            # Sezione Risultato Tempi
+                            st.write("#### 🏆 Risultato della Gara")
+                            ris_evento = st.session_state.db["storico_risultati"].get(ev["id"], {})
+                            col_t1, col_t2, col_t3 = st.columns(3)
+                            with col_t1:
+                                ris_t1 = st.text_input("1° Tempo", value=ris_evento.get("t1", ""), key=f"ris_t1_{ev['id']}")
+                            with col_t2:
+                                ris_t2 = st.text_input("2° Tempo", value=ris_evento.get("t2", ""), key=f"ris_t2_{ev['id']}")
+                            with col_t3:
+                                ris_t3 = st.text_input("3° Tempo", value=ris_evento.get("t3", ""), key=f"ris_t3_{ev['id']}")
+                                
+                            st.write("---")
+                            st.write("#### 🏃 Convocati, Minuti e Gol")
+                            
                             resoconto_corrente = {}
                             resoconto_minuti = {}
+                            resoconto_gol = {}
                             opzioni = ["🟢 Convocato", "🔴 Non Convocato"]
                             
                             for ragazzo in st.session_state.db["ragazzi"]:
-                                col_nome, col_stato, col_minuti = st.columns([1, 1.5, 1])
+                                col_nome, col_stato, col_minuti, col_gol = st.columns([1, 1.2, 0.8, 0.8])
                                 with col_nome: st.write(f"**{ragazzo}**")
                                 with col_stato:
                                     stato_precedente = appello_evento.get(ragazzo, opzioni[0])
@@ -437,13 +461,24 @@ elif menu == "🟢 Calendario e Convocazioni":
                                     else:
                                         resoconto_minuti[ragazzo] = 0
                                         st.write("") 
+                                        
+                                with col_gol:
+                                    if "Convocato" in stato and "Non" not in stato:
+                                        gol_prec = gol_evento.get(ragazzo, 0)
+                                        gol = st.number_input("Gol", min_value=0, max_value=20, value=gol_prec, step=1, label_visibility="collapsed", key=f"g_{ragazzo}_{ev['id']}")
+                                        resoconto_gol[ragazzo] = gol
+                                    else:
+                                        resoconto_gol[ragazzo] = 0
+                                        st.write("")
                             
                             st.write("")
-                            if st.button("💾 Salva Convocazioni", key=f"btn_salvap_{ev['id']}", type="primary"):
+                            if st.button("💾 Salva Dati Gara", key=f"btn_salvap_{ev['id']}", type="primary"):
                                 st.session_state.db["storico_presenze"][ev["id"]] = resoconto_corrente
                                 st.session_state.db["storico_minutaggio"][ev["id"]] = resoconto_minuti
+                                st.session_state.db["storico_gol"][ev["id"]] = resoconto_gol
+                                st.session_state.db["storico_risultati"][ev["id"]] = {"t1": ris_t1, "t2": ris_t2, "t3": ris_t3}
                                 salvare_dati()
-                                st.success("Convocazioni salvate! Controlla la scheda 'Modulo Ufficiale'.")
+                                st.success("Dati archiviati con successo!")
                                 st.rerun()
 
                     with tab2:

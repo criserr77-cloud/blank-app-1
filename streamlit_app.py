@@ -355,6 +355,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     appello_evento = st.session_state.db["storico_presenze"].get(ev["id"], {})
                     minutaggio_evento = st.session_state.db["storico_minutaggio"].get(ev["id"], {})
                     gol_evento = st.session_state.db["storico_gol"].get(ev["id"], {})
+                    ris_evento = st.session_state.db["storico_risultati"].get(ev["id"], {})
                     
                     sq_casa = "USO UNITED" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
                     sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED"
@@ -375,6 +376,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     
                     logo_immagine = get_logo_html()
                     
+                    # Generazione HTML Distinta
                     html_distinta = f"""<div style='background-color: white; color: black; padding: 10px; font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>
 <table style='width: 100%; border-collapse: collapse; text-align: center; border: 2px solid black;'>
 <tr>
@@ -419,9 +421,56 @@ elif menu == "🟢 Calendario e Convocazioni":
                     else:
                         whatsapp_text += "*(Nessun convocato ancora selezionato)*\n"
                     whatsapp_text += "\n*Forza USO UNITED!* 💚💙"
+                    
+                    # Generazione HTML Report Gara
+                    r_t1 = ris_evento.get("t1", "-")
+                    r_t2 = ris_evento.get("t2", "-")
+                    r_t3 = ris_evento.get("t3", "-")
+                    
+                    righe_report = ""
+                    for idx, ragazzo in enumerate(st.session_state.db["ragazzi"]):
+                        stato = appello_evento.get(ragazzo, "🟢 Convocato")
+                        se_convocato = "Sì" if "Convocato" in stato and "Non" not in stato else "No"
+                        m_giocati = minutaggio_evento.get(ragazzo, 0) if se_convocato == "Sì" else "-"
+                        g_fatti = gol_evento.get(ragazzo, 0) if se_convocato == "Sì" else "-"
+                        
+                        colore_riga = "#ffffff" if se_convocato == "Sì" else "#ffe6e6"
+                        
+                        righe_report += f"<tr style='background-color: {colore_riga};'><td style='border: 1px solid black; padding: 5px; text-align: left;'>{ragazzo}</td><td style='border: 1px solid black; padding: 5px;'>{se_convocato}</td><td style='border: 1px solid black; padding: 5px;'>{m_giocati}</td><td style='border: 1px solid black; padding: 5px;'>{g_fatti}</td></tr>"
+                    
+                    html_report = f"""<div style='background-color: white; color: black; padding: 20px; font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 2px solid black;'>
+<h2 style='text-align: center; color: #4CAF50; margin-top: 0;'>📊 REPORT GARA UFFICIALE</h2>
+<div style='margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;'>
+    <p><strong>Partita:</strong> {sq_casa} vs {sq_trasf}</p>
+    <p><strong>Data:</strong> {data_f} | <strong>Luogo:</strong> {ind_campo}</p>
+</div>
+<h3 style='color: #333;'>🏆 Risultato Tempi</h3>
+<table style='width: 100%; border-collapse: collapse; text-align: center; border: 1px solid black; margin-bottom: 20px;'>
+    <tr style='font-weight: bold; background-color: #f0f0f0;'>
+        <td style='border: 1px solid black; padding: 10px;'>1° Tempo</td>
+        <td style='border: 1px solid black; padding: 10px;'>2° Tempo</td>
+        <td style='border: 1px solid black; padding: 10px;'>3° Tempo</td>
+    </tr>
+    <tr>
+        <td style='border: 1px solid black; padding: 10px; font-size: 18px; font-weight: bold;'>{r_t1}</td>
+        <td style='border: 1px solid black; padding: 10px; font-size: 18px; font-weight: bold;'>{r_t2}</td>
+        <td style='border: 1px solid black; padding: 10px; font-size: 18px; font-weight: bold;'>{r_t3}</td>
+    </tr>
+</table>
+<h3 style='color: #333;'>🏃‍♂️ Dati Giocatori</h3>
+<table style='width: 100%; border-collapse: collapse; text-align: center; border: 1px solid black;'>
+    <tr style='font-weight: bold; background-color: #f0f0f0;'>
+        <td style='border: 1px solid black; padding: 5px; width: 40%;'>Giocatore</td>
+        <td style='border: 1px solid black; padding: 5px; width: 20%;'>Convocato</td>
+        <td style='border: 1px solid black; padding: 5px; width: 20%;'>Minuti</td>
+        <td style='border: 1px solid black; padding: 5px; width: 20%;'>Gol ⚽</td>
+    </tr>
+    {righe_report}
+</table>
+</div>"""
 
-                    # SCHEDE DI NAVIGAZIONE CON NUOVA TAB REPORT
-                    tab1, tab2, tab3, tab4 = st.tabs(["⚙️ Compila Elenco", "📄 Modulo Ufficiale", "📱 Messaggio WhatsApp", "📈 Report Gara"])
+                    # SCHEDE DI NAVIGAZIONE CON 4 TABS
+                    tab1, tab2, tab3, tab4 = st.tabs(["⚙️ Compila Elenco", "📄 Modulo Ufficiale", "📱 Messaggio WhatsApp", "📊 Report Gara"])
                     
                     with tab1:
                         if not st.session_state.db["ragazzi"]:
@@ -429,7 +478,6 @@ elif menu == "🟢 Calendario e Convocazioni":
                         else:
                             # Sezione Risultato Tempi
                             st.write("#### 🏆 Risultato della Gara")
-                            ris_evento = st.session_state.db["storico_risultati"].get(ev["id"], {})
                             col_t1, col_t2, col_t3 = st.columns(3)
                             with col_t1:
                                 ris_t1 = st.text_input("1° Tempo", value=ris_evento.get("t1", ""), key=f"ris_t1_{ev['id']}")
@@ -501,58 +549,12 @@ elif menu == "🟢 Calendario e Convocazioni":
                         st.caption("💡 **Suggerimento:** Per allegare il modulo ufficiale, scarica il file dalla scheda 'Modulo Ufficiale' e allegalo come 'Documento' direttamente nella chat WhatsApp!")
 
                     with tab4:
-                        # Generazione Report Gara HTML
-                        ris_evento_rep = st.session_state.db["storico_risultati"].get(ev["id"], {})
-                        t1_rep = ris_evento_rep.get("t1", "") or "-"
-                        t2_rep = ris_evento_rep.get("t2", "") or "-"
-                        t3_rep = ris_evento_rep.get("t3", "") or "-"
-                        
-                        righe_report = ""
-                        for ragazzo in st.session_state.db["ragazzi"]:
-                            stato_rep = appello_evento.get(ragazzo, "🟢 Convocato")
-                            if "Convocato" in stato_rep and "Non" not in stato_rep:
-                                conv_sym = "✅"
-                                min_rep = minutaggio_evento.get(ragazzo, 0)
-                                gol_rep = gol_evento.get(ragazzo, 0)
-                            else:
-                                conv_sym = "❌"
-                                min_rep = 0
-                                gol_rep = 0
-                                
-                            righe_report += f"<tr><td style='border: 1px solid black; padding: 5px; text-align: left;'>{ragazzo}</td><td style='border: 1px solid black; padding: 5px;'>{conv_sym}</td><td style='border: 1px solid black; padding: 5px;'>{min_rep}'</td><td style='border: 1px solid black; padding: 5px; font-weight: bold;'>{gol_rep}</td></tr>"
-
-                        html_report = f"""<div style='background-color: white; color: black; padding: 20px; font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 2px solid black;'>
-<h2 style='text-align: center; color: #4CAF50; margin-bottom: 5px;'>REPORT GARA</h2>
-<h3 style='text-align: center; margin-top: 0;'>{sq_casa} - {sq_trasf}</h3>
-<p><strong>Data:</strong> {data_f}<br>
-<strong>Luogo:</strong> {ind_campo}</p>
-<hr>
-<h4 style='margin-bottom: 10px;'>🏆 Risultati Parziali:</h4>
-<table style='width: 100%; margin-bottom: 20px; text-align: center; font-size: 16px;'>
-<tr>
-    <td><strong>1° Tempo:</strong><br>{t1_rep}</td>
-    <td><strong>2° Tempo:</strong><br>{t2_rep}</td>
-    <td><strong>3° Tempo:</strong><br>{t3_rep}</td>
-</tr>
-</table>
-<hr>
-<h4>🏃 Statistiche Giocatori:</h4>
-<table style='width: 100%; border-collapse: collapse; text-align: center; border: 1px solid black;'>
-<tr style='background-color: #f0f0f0;'>
-<th style='border: 1px solid black; padding: 5px; width: 50%;'>Giocatore</th>
-<th style='border: 1px solid black; padding: 5px; width: 15%;'>Conv.</th>
-<th style='border: 1px solid black; padding: 5px; width: 15%;'>Minuti</th>
-<th style='border: 1px solid black; padding: 5px; width: 20%;'>Gol</th>
-</tr>
-{righe_report}
-</table>
-</div>"""
                         st.markdown(html_report, unsafe_allow_html=True)
                         st.write("")
                         st.download_button(
                             label="⬇️ Scarica Report Gara (.html)",
                             data=html_report,
-                            file_name=f"Report_Gara_{sq_casa}_vs_{sq_trasf}.html",
+                            file_name=f"Report_{sq_casa}_vs_{sq_trasf}.html",
                             mime="text/html",
                             key=f"dl_rep_{ev['id']}"
                         )

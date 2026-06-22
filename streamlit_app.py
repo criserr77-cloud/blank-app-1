@@ -534,6 +534,22 @@ elif menu == "🟢 Calendario e Convocazioni":
                     with tab2:
                         st.markdown(html_distinta, unsafe_allow_html=True)
                         st.write("")
+                        
+                        # Generatore PDF per la Distinta
+                        html_to_print_distinta = f"""
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                        <title>Convocazioni {sq_casa} - {sq_trasf}</title>
+                        </head>
+                        <body onload="window.print()" style="padding: 20px;">
+                        {html_distinta}
+                        </body>
+                        </html>
+                        """
+                        b64_print_distinta = base64.b64encode(html_to_print_distinta.encode('utf-8')).decode('utf-8')
+                        st.markdown(f'<a href="data:text/html;base64,{b64_print_distinta}" target="_blank" style="display:block; width:100%; text-align:center; background-color:#FF4B4B; color:white; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; margin-bottom:10px;">🖨️ Genera PDF (Stampa Modulo)</a>', unsafe_allow_html=True)
+                        
                         st.download_button(
                             label="⬇️ Scarica File Web (.html)",
                             data=html_distinta,
@@ -551,6 +567,22 @@ elif menu == "🟢 Calendario e Convocazioni":
                     with tab4:
                         st.markdown(html_report, unsafe_allow_html=True)
                         st.write("")
+                        
+                        # Generatore PDF per il Report Gara
+                        html_to_print_report = f"""
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                        <title>Report {sq_casa} - {sq_trasf}</title>
+                        </head>
+                        <body onload="window.print()" style="padding: 20px;">
+                        {html_report}
+                        </body>
+                        </html>
+                        """
+                        b64_print_report = base64.b64encode(html_to_print_report.encode('utf-8')).decode('utf-8')
+                        st.markdown(f'<a href="data:text/html;base64,{b64_print_report}" target="_blank" style="display:block; width:100%; text-align:center; background-color:#FF4B4B; color:white; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; margin-bottom:10px;">🖨️ Genera PDF (Stampa Report)</a>', unsafe_allow_html=True)
+                        
                         st.download_button(
                             label="⬇️ Scarica Report Gara (.html)",
                             data=html_report,

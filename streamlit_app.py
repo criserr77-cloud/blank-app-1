@@ -595,15 +595,18 @@ elif menu == "🏆 Statistiche Partite":
             
             pct_conv = (convocati / totale_gare) * 100 if totale_gare > 0 else 0.00
             min_tot = 0
+            gol_tot = 0
             for ev_id in id_gare:
                 min_tot += st.session_state.db["storico_minutaggio"].get(str(ev_id), {}).get(ragazzo, 0)
+                gol_tot += st.session_state.db["storico_gol"].get(str(ev_id), {}).get(ragazzo, 0)
 
             tabella_gare.append({
                 "Giocatore": ragazzo,
                 "🟢 Convocati": convocati,
                 "🔴 Non Convocati": non_convocati,
                 "📈 % Convocazioni": f"{pct_conv:.2f}%",
-                "⏱️ Min. Giocati": min_tot
+                "⏱️ Min. Giocati": min_tot,
+                "⚽ Gol Fatti": gol_tot
             })
         st.table(tabella_gare)
 

@@ -759,9 +759,13 @@ elif menu == "📈 Statistiche Squadra":
                 sconfitte += 1
                 
             data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
-            avv = ev.get("avversario", "Avversario")
             
-            righe_partite += f"<tr><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{data_f}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{avv}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t1 if t1 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t2 if t2 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t3 if t3 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px; font-weight: bold;'>{p_uso_tot} - {p_avv_tot}</td></tr>"
+            # --- MODIFICA: Creazione stringa "Squadra Casa vs Squadra Trasferta" ---
+            sq_casa = "USO UNITED" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
+            sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED"
+            stringa_partita = f"{sq_casa} vs {sq_trasf}"
+            
+            righe_partite += f"<tr><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{data_f}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{stringa_partita}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t1 if t1 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t2 if t2 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t3 if t3 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px; font-weight: bold;'>{p_uso_tot} - {p_avv_tot}</td></tr>"
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Gare Giocate", tot_partite)
@@ -779,7 +783,7 @@ elif menu == "📈 Statistiche Squadra":
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; background-color: var(--secondary-background-color); color: var(--text-color);">
             <tr style="background-color: rgba(128,128,128,0.2); font-weight: bold;">
                 <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">Data</td>
-                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">Avversario</td>
+                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">Partita</td>
                 <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">1° T</td>
                 <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">2° T</td>
                 <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">3° T</td>

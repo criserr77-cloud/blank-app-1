@@ -133,6 +133,7 @@ menu = st.sidebar.radio("Navigazione", [
     "🟢 Calendario e Convocazioni", 
     "📊 Statistiche Allenamenti",
     "🏆 Statistiche Partite",
+    "📈 Statistiche Squadra",
     "🏃 Anagrafica rosa"
 ])
 
@@ -477,14 +478,14 @@ elif menu == "🟢 Calendario e Convocazioni":
                             st.warning("Rosa vuota.")
                         else:
                             # Sezione Risultato Tempi
-                            st.write("#### 🏆 Risultato della Gara")
+                            st.write("#### 🏆 Risultato della Gara (formato 'Nostri-Loro')")
                             col_t1, col_t2, col_t3 = st.columns(3)
                             with col_t1:
-                                ris_t1 = st.text_input("1° Tempo", value=ris_evento.get("t1", ""), key=f"ris_t1_{ev['id']}")
+                                ris_t1 = st.text_input("1° Tempo (es. 1-0)", value=ris_evento.get("t1", ""), key=f"ris_t1_{ev['id']}")
                             with col_t2:
-                                ris_t2 = st.text_input("2° Tempo", value=ris_evento.get("t2", ""), key=f"ris_t2_{ev['id']}")
+                                ris_t2 = st.text_input("2° Tempo (es. 2-2)", value=ris_evento.get("t2", ""), key=f"ris_t2_{ev['id']}")
                             with col_t3:
-                                ris_t3 = st.text_input("3° Tempo", value=ris_evento.get("t3", ""), key=f"ris_t3_{ev['id']}")
+                                ris_t3 = st.text_input("3° Tempo (es. 0-1)", value=ris_evento.get("t3", ""), key=f"ris_t3_{ev['id']}")
                                 
                             st.write("---")
                             st.write("#### 🏃 Convocati, Minuti e Gol")
@@ -701,7 +702,98 @@ elif menu == "🏆 Statistiche Partite":
         st.table(tabella_gare)
 
 # ==========================================
-# SCHERMATA 5: GESTIONE ROSA
+# SCHERMATA 5: STATISTICHE SQUADRA (NUOVA)
+# ==========================================
+elif menu == "📈 Statistiche Squadra":
+    st.header("📈 Statistiche di Squadra")
+    
+    # Funzione interna per calcolare i punti di un tempo
+    def parse_tempo(ris_str):
+        if not ris_str: return 0, 0, 0, 0
+        s = str(ris_str).replace(":", "-").replace(" ", "").replace("/", "-")
+        try:
+            if "-" in s:
+                gf, gs = map(int, s.split("-")[:2])
+                if gf > gs: return 1, 0, gf, gs
+                elif gf == gs: return 1, 1, gf, gs
+                else: return 0, 1, gf, gs
+        except:
+            pass
+        return 0, 0, 0, 0
+        
+    eventi_partita = [ev for ev in st.session_state.db["eventi"] if ev["tipo"] in ["Partita", "Torneo"]]
+    
+    tot_partite = 0
+    tot_gf = 0
+    tot_gs = 0
+    vittorie = 0
+    pareggi = 0
+    sconfitte = 0
+    
+    righe_partite = ""
+    
+    for ev in eventi_partita:
+        ris_evento = st.session_state.db["storico_risultati"].get(ev["id"], {})
+        t1 = ris_evento.get("t1", "")
+        t2 = ris_evento.get("t2", "")
+        t3 = ris_evento.get("t3", "")
+        
+        # Consideriamo la partita giocata se c'è almeno un risultato inserito
+        if t1 or t2 or t3:
+            tot_partite += 1
+            pu1, pa1, gf1, gs1 = parse_tempo(t1)
+            pu2, pa2, gf2, gs2 = parse_tempo(t2)
+            pu3, pa3, gf3, gs3 = parse_tempo(t3)
+            
+            p_uso_tot = pu1 + pu2 + pu3
+            p_avv_tot = pa1 + pa2 + pa3
+            
+            tot_gf += (gf1 + gf2 + gf3)
+            tot_gs += (gs1 + gs2 + gs3)
+            
+            if p_uso_tot > p_avv_tot:
+                vittorie += 1
+            elif p_uso_tot == p_avv_tot:
+                pareggi += 1
+            else:
+                sconfitte += 1
+                
+            data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
+            avv = ev.get("avversario", "Avversario")
+            
+            righe_partite += f"<tr><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{data_f}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{avv}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t1 if t1 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t2 if t2 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t3 if t3 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px; font-weight: bold;'>{p_uso_tot} - {p_avv_tot}</td></tr>"
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Gare Giocate", tot_partite)
+    col2.metric("V - P - S", f"{vittorie} - {pareggi} - {sconfitte}")
+    col3.metric("Gol Fatti", tot_gf)
+    col4.metric("Gol Subiti", tot_gs)
+    
+    st.write("---")
+    st.subheader("📝 Dettaglio Risultati Partite")
+    if not righe_partite:
+        st.info("Nessun risultato inserito nelle partite in calendario.")
+    else:
+        tabella_html = f"""
+        <div style="overflow-x:auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; background-color: var(--secondary-background-color); color: var(--text-color);">
+            <tr style="background-color: rgba(128,128,128,0.2); font-weight: bold;">
+                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">Data</td>
+                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">Avversario</td>
+                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">1° T</td>
+                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">2° T</td>
+                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3);">3° T</td>
+                <td style="padding: 10px; border: 1px solid rgba(128,128,128,0.3); color: #4CAF50;">Punti Finali</td>
+            </tr>
+            {righe_partite}
+        </table>
+        </div>
+        """
+        st.markdown(tabella_html, unsafe_allow_html=True)
+        st.caption("💡 *Il Risultato Finale (Punti Finali) è calcolato a tempi: 1 punto per la vittoria del tempo, 1 punto a testa per il pareggio, 0 per la sconfitta.*")
+
+# ==========================================
+# SCHERMATA 6: GESTIONE ROSA
 # ==========================================
 elif menu == "🏃 Anagrafica rosa":
     st.header("🏃 Anagrafica e Gestione Rosa")

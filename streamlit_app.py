@@ -210,7 +210,7 @@ if menu == "🔵 Calendario Allenamenti":
                             st.session_state.edit_evento = ev["id"]
                             st.rerun()
                     with col_del:
-                        if st.button("🗑️ Elimina", key=f"del_ev_{ev['id']}"):
+                        if st.button("🗑️").id:
                             st.session_state.db["eventi"] = [e for e in st.session_state.db["eventi"] if e["id"] != ev["id"]]
                             if ev["id"] in st.session_state.db["storico_presenze"]: del st.session_state.db["storico_presenze"][ev["id"]]
                             if ev["id"] in st.session_state.db["storico_minutaggio"]: del st.session_state.db["storico_minutaggio"][ev["id"]]
@@ -411,6 +411,7 @@ elif menu == "🟢 Calendario e Convocazioni":
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
                     whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
                     
+                    # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
                         whatsapp_text += f"📝 *Note:*\n{nota_p}\n"
@@ -477,8 +478,8 @@ elif menu == "🟢 Calendario e Convocazioni":
                         if not st.session_state.db["ragazzi"]:
                             st.warning("Rosa vuota.")
                         else:
-                            # Sezione Risultato Tempi
-                            st.write("#### 🏆 Risultato della Gara (formato 'Nostri-Loro')")
+                            # Sezione Risultato Tempi - MODIFICATO IN CASA-TRASFERTA
+                            st.write(f"#### 🏆 Risultato della Gara (formato ordinato '{sq_casa} - {sq_trasf}')")
                             col_t1, col_t2, col_t3 = st.columns(3)
                             with col_t1:
                                 ris_t1 = st.text_input("1° Tempo (es. 1-0)", value=ris_evento.get("t1", ""), key=f"ris_t1_{ev['id']}")
@@ -702,21 +703,28 @@ elif menu == "🏆 Statistiche Partite":
         st.table(tabella_gare)
 
 # ==========================================
-# SCHERMATA 5: STATISTICHE SQUADRA (NUOVA)
+# SCHERMATA 5: STATISTICHE SQUADRA
 # ==========================================
 elif menu == "📈 Statistiche Squadra":
     st.header("📈 Statistiche di Squadra")
     
-    # Funzione interna per calcolare i punti di un tempo
-    def parse_tempo(ris_str):
+    # --- LOGICA CORRETTA: rileva i gol in base al fattore Casa/Trasferta dell'USO UNITED ---
+    def parse_tempo(ris_str, luogo="Casa"):
         if not ris_str: return 0, 0, 0, 0
         s = str(ris_str).replace(":", "-").replace(" ", "").replace("/", "-")
         try:
             if "-" in s:
-                gf, gs = map(int, s.split("-")[:2])
-                if gf > gs: return 1, 0, gf, gs
-                elif gf == gs: return 1, 1, gf, gs
-                else: return 0, 1, gf, gs
+                g_casa, g_trasf = map(int, s.split("-")[:2])
+                if luogo == "Casa":
+                    gf = g_casa   # Gol USO UNITED
+                    gs = g_trasf  # Gol Avversario
+                else:
+                    gf = g_trasf  # Gol USO UNITED
+                    gs = g_casa   # Gol Avversario
+                
+                if gf > gs: return 1, 0, gf, gs    # USO vince il tempo
+                elif gf == gs: return 1, 1, gf, gs # Pareggio
+                else: return 0, 1, gf, gs          # Avversario vince il tempo
         except:
             pass
         return 0, 0, 0, 0
@@ -738,12 +746,12 @@ elif menu == "📈 Statistiche Squadra":
         t2 = ris_evento.get("t2", "")
         t3 = ris_evento.get("t3", "")
         
-        # Consideriamo la partita giocata se c'è almeno un risultato inserito
         if t1 or t2 or t3:
             tot_partite += 1
-            pu1, pa1, gf1, gs1 = parse_tempo(t1)
-            pu2, pa2, gf2, gs2 = parse_tempo(t2)
-            pu3, pa3, gf3, gs3 = parse_tempo(t3)
+            luogo_gara = ev.get("luogo", "Casa")
+            pu1, pa1, gf1, gs1 = parse_tempo(t1, luogo_gara)
+            pu2, pa2, gf2, gs2 = parse_tempo(t2, luogo_gara)
+            pu3, pa3, gf3, gs3 = parse_tempo(t3, luogo_gara)
             
             p_uso_tot = pu1 + pu2 + pu3
             p_avv_tot = pa1 + pa2 + pa3
@@ -761,26 +769,24 @@ elif menu == "📈 Statistiche Squadra":
             elif p_uso_tot < p_avv_tot:
                 sconfitte += 1
             else:
-                # In caso di parità nei punti, si valuta la differenza reti globale della gara
+                # Se i punti federazione sono pari, subentra la Differenza Reti reale dell'USO United
                 if gf_partita > gs_partita:
                     vittorie += 1
-                    esito_tabella += " <br><span style='font-size:11px; font-weight:normal;'>(V per DR)</span>"
+                    esito_tabella += " <br><span style='font-size:11px; font-weight:normal; color:#4CAF50;'>(V per DR)</span>"
                 elif gf_partita < gs_partita:
                     sconfitte += 1
-                    esito_tabella += " <br><span style='font-size:11px; font-weight:normal;'>(S per DR)</span>"
+                    esito_tabella += " <br><span style='font-size:11px; font-weight:normal; color:#F44336;'>(S per DR)</span>"
                 else:
                     pareggi += 1
                 
             data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
             
-            # --- Creazione stringa "Squadra Casa vs Squadra Trasferta" ---
-            sq_casa = "USO UNITED" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
-            sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED"
+            sq_casa = "USO UNITED" if luogo_gara == "Casa" else ev.get("avversario", "Avversario")
+            sq_trasf = ev.get("avversario", "Avversario") if luogo_gara == "Casa" else "USO UNITED"
             stringa_partita = f"{sq_casa} vs {sq_trasf}"
             
             righe_partite += f"<tr><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{data_f}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{stringa_partita}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t1 if t1 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t2 if t2 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t3 if t3 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px; font-weight: bold;'>{esito_tabella}</td></tr>"
 
-    # --- NUOVO LAYOUT TABELLARE PER I TOTALI DI SQUADRA ---
     riepilogo_html = f"""
     <div style="overflow-x:auto; margin-bottom: 20px;">
     <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 16px; background-color: var(--secondary-background-color); color: var(--text-color); border-radius: 10px; overflow: hidden; border: 1px solid rgba(128,128,128,0.3);">
@@ -829,7 +835,7 @@ elif menu == "📈 Statistiche Squadra":
         st.caption("💡 *Il Risultato Finale (Punti Finali) è calcolato a tempi: 1 punto per tempo vinto, 1 per il pari, 0 persi. In caso di parità nei punti, decide la Differenza Reti globale della gara.*")
 
 # ==========================================
-# SCHERMATA 6: GESTIONE ROSA
+# SCHERMATA 6: ANAGRAFICA ROSA
 # ==========================================
 elif menu == "🏃 Anagrafica rosa":
     st.header("🏃 Anagrafica e Gestione Rosa")

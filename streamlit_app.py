@@ -399,7 +399,7 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
-                    # Generazione testo WhatsApp con saluto iniziale e note
+                    # Generazione testo WhatsApp
                     whatsapp_text = f"Ciao a tutti,\n\n"
                     whatsapp_text += f"⚽ *CONVOCAZIONI* ⚽\n"
                     whatsapp_text += f"⚽ *{sq_casa}-{sq_trasf}*\n"
@@ -408,7 +408,6 @@ elif menu == "🟢 Calendario e Convocazioni":
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
                     whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
                     
-                    # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
                         whatsapp_text += f"📝 *Note:*\n{nota_p}\n"
@@ -421,8 +420,8 @@ elif menu == "🟢 Calendario e Convocazioni":
                         whatsapp_text += "*(Nessun convocato ancora selezionato)*\n"
                     whatsapp_text += "\n*Forza USO UNITED!* 💚💙"
 
-                    # SCHEDE DI NAVIGAZIONE
-                    tab1, tab2, tab3 = st.tabs(["⚙️ Compila Elenco", "📄 Modulo Ufficiale", "📱 Messaggio WhatsApp"])
+                    # SCHEDE DI NAVIGAZIONE CON NUOVA TAB REPORT
+                    tab1, tab2, tab3, tab4 = st.tabs(["⚙️ Compila Elenco", "📄 Modulo Ufficiale", "📱 Messaggio WhatsApp", "📈 Report Gara"])
                     
                     with tab1:
                         if not st.session_state.db["ragazzi"]:
@@ -500,6 +499,63 @@ elif menu == "🟢 Calendario e Convocazioni":
                         st.markdown(f'<a href="https://wa.me/?text={whatsapp_url}" target="_blank" style="display:block; width:100%; text-align:center; background-color:#25D366; color:white; padding:10px; border-radius:5px; text-decoration:none; font-weight:bold; margin-bottom:10px;">📲 Invia Testo su WhatsApp</a>', unsafe_allow_html=True)
                         st.code(whatsapp_text, language="markdown")
                         st.caption("💡 **Suggerimento:** Per allegare il modulo ufficiale, scarica il file dalla scheda 'Modulo Ufficiale' e allegalo come 'Documento' direttamente nella chat WhatsApp!")
+
+                    with tab4:
+                        # Generazione Report Gara HTML
+                        ris_evento_rep = st.session_state.db["storico_risultati"].get(ev["id"], {})
+                        t1_rep = ris_evento_rep.get("t1", "") or "-"
+                        t2_rep = ris_evento_rep.get("t2", "") or "-"
+                        t3_rep = ris_evento_rep.get("t3", "") or "-"
+                        
+                        righe_report = ""
+                        for ragazzo in st.session_state.db["ragazzi"]:
+                            stato_rep = appello_evento.get(ragazzo, "🟢 Convocato")
+                            if "Convocato" in stato_rep and "Non" not in stato_rep:
+                                conv_sym = "✅"
+                                min_rep = minutaggio_evento.get(ragazzo, 0)
+                                gol_rep = gol_evento.get(ragazzo, 0)
+                            else:
+                                conv_sym = "❌"
+                                min_rep = 0
+                                gol_rep = 0
+                                
+                            righe_report += f"<tr><td style='border: 1px solid black; padding: 5px; text-align: left;'>{ragazzo}</td><td style='border: 1px solid black; padding: 5px;'>{conv_sym}</td><td style='border: 1px solid black; padding: 5px;'>{min_rep}'</td><td style='border: 1px solid black; padding: 5px; font-weight: bold;'>{gol_rep}</td></tr>"
+
+                        html_report = f"""<div style='background-color: white; color: black; padding: 20px; font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 2px solid black;'>
+<h2 style='text-align: center; color: #4CAF50; margin-bottom: 5px;'>REPORT GARA</h2>
+<h3 style='text-align: center; margin-top: 0;'>{sq_casa} - {sq_trasf}</h3>
+<p><strong>Data:</strong> {data_f}<br>
+<strong>Luogo:</strong> {ind_campo}</p>
+<hr>
+<h4 style='margin-bottom: 10px;'>🏆 Risultati Parziali:</h4>
+<table style='width: 100%; margin-bottom: 20px; text-align: center; font-size: 16px;'>
+<tr>
+    <td><strong>1° Tempo:</strong><br>{t1_rep}</td>
+    <td><strong>2° Tempo:</strong><br>{t2_rep}</td>
+    <td><strong>3° Tempo:</strong><br>{t3_rep}</td>
+</tr>
+</table>
+<hr>
+<h4>🏃 Statistiche Giocatori:</h4>
+<table style='width: 100%; border-collapse: collapse; text-align: center; border: 1px solid black;'>
+<tr style='background-color: #f0f0f0;'>
+<th style='border: 1px solid black; padding: 5px; width: 50%;'>Giocatore</th>
+<th style='border: 1px solid black; padding: 5px; width: 15%;'>Conv.</th>
+<th style='border: 1px solid black; padding: 5px; width: 15%;'>Minuti</th>
+<th style='border: 1px solid black; padding: 5px; width: 20%;'>Gol</th>
+</tr>
+{righe_report}
+</table>
+</div>"""
+                        st.markdown(html_report, unsafe_allow_html=True)
+                        st.write("")
+                        st.download_button(
+                            label="⬇️ Scarica Report Gara (.html)",
+                            data=html_report,
+                            file_name=f"Report_Gara_{sq_casa}_vs_{sq_trasf}.html",
+                            mime="text/html",
+                            key=f"dl_rep_{ev['id']}"
+                        )
 
     st.write("---")
     st.subheader("➕ Inserisci una Nuova Partita")

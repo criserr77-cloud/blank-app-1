@@ -12,7 +12,7 @@ st.set_page_config(page_title="MisterApp - Settore Giovanile", layout="centered"
 # --- CSS PER LOOK MOBILE E MENU RESPONSIVE (DARK/LIGHT MODE) ---
 st.markdown("""
     <style>
-    /* Usiamo i colori nativi del tema di Streamlit per adattarsi perfettamente alla Dark Mode */
+    /* Colori nativi del tema di Streamlit per adattarsi perfettamente alla Dark Mode */
     .card { 
         background-color: var(--secondary-background-color); 
         color: var(--text-color);
@@ -39,6 +39,11 @@ st.markdown("""
     
     /* Tabella Rosa - Responsive CSS */
     .mobile-label { display: none; }
+    .desktop-row {
+        display: flex;
+        align-items: center;
+        text-align: center;
+    }
     
     @media (max-width: 768px) {
         .hide-on-mobile { display: none !important; }
@@ -47,6 +52,7 @@ st.markdown("""
             padding: 15px !important;
             gap: 8px !important;
             align-items: flex-start !important;
+            text-align: left !important;
         }
         .mobile-card > div { 
             width: 100%;
@@ -74,14 +80,11 @@ def caricare_dati():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r", encoding="utf-8") as f:
             dati = json.load(f)
-            if "storico_minutaggio" not in dati:
-                dati["storico_minutaggio"] = {}
-            if "dettagli_ragazzi" not in dati:
-                dati["dettagli_ragazzi"] = {}
-            if "storico_gol" not in dati:
-                dati["storico_gol"] = {}
-            if "storico_risultati" not in dati:
-                dati["storico_risultati"] = {}
+            # Controlli di sicurezza per aggiornare file di salvataggio vecchi
+            if "storico_minutaggio" not in dati: dati["storico_minutaggio"] = {}
+            if "dettagli_ragazzi" not in dati: dati["dettagli_ragazzi"] = {}
+            if "storico_gol" not in dati: dati["storico_gol"] = {}
+            if "storico_risultati" not in dati: dati["storico_risultati"] = {}
             return dati
     else:
         return {
@@ -112,14 +115,10 @@ def get_logo_html():
 # Inizializziamo lo stato di Streamlit
 if "db" not in st.session_state:
     st.session_state.db = caricare_dati()
-    if "storico_minutaggio" not in st.session_state.db:
-        st.session_state.db["storico_minutaggio"] = {}
-    if "dettagli_ragazzi" not in st.session_state.db:
-        st.session_state.db["dettagli_ragazzi"] = {}
-    if "storico_gol" not in st.session_state.db:
-        st.session_state.db["storico_gol"] = {}
-    if "storico_risultati" not in st.session_state.db:
-        st.session_state.db["storico_risultati"] = {}
+    if "storico_minutaggio" not in st.session_state.db: st.session_state.db["storico_minutaggio"] = {}
+    if "dettagli_ragazzi" not in st.session_state.db: st.session_state.db["dettagli_ragazzi"] = {}
+    if "storico_gol" not in st.session_state.db: st.session_state.db["storico_gol"] = {}
+    if "storico_risultati" not in st.session_state.db: st.session_state.db["storico_risultati"] = {}
 
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = None
@@ -396,7 +395,7 @@ elif menu == "🟢 Calendario e Convocazioni":
 </table>
 </div>"""
                     
-                    # Generazione testo WhatsApp con saluto iniziale e note
+                    # Generazione testo WhatsApp
                     whatsapp_text = f"Ciao a tutti,\n\n"
                     whatsapp_text += f"⚽ *CONVOCAZIONI* ⚽\n"
                     whatsapp_text += f"⚽ *{sq_casa}-{sq_trasf}*\n"
@@ -405,7 +404,6 @@ elif menu == "🟢 Calendario e Convocazioni":
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
                     whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
                     
-                    # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
                         whatsapp_text += f"📝 *Note:*\n{nota_p}\n"
@@ -621,15 +619,13 @@ elif menu == "🏃 Anagrafica rosa":
         
         # --- INTESTAZIONE TABELLA (Nasconde automaticamente su mobile) ---
         st.markdown("""
-            <div class="hide-on-mobile" style="display: flex; font-weight: bold; background-color: rgba(128,128,128,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid rgba(128,128,128,0.3);">
-                <div style="flex: 6; display: flex;">
-                    <div style="flex: 1;">Nome</div>
-                    <div style="flex: 1;">Cognome</div>
-                    <div style="flex: 1;">Nascita</div>
-                    <div style="flex: 1;">Ruolo</div>
-                </div>
-                <div style="flex: 1; text-align: center; margin-left: 10px;">Mod</div>
-                <div style="flex: 1; text-align: center; margin-left: 10px;">Canc</div>
+            <div class="hide-on-mobile" style="display: flex; font-weight: bold; background-color: rgba(128,128,128,0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid rgba(128,128,128,0.3); text-align: center;">
+                <div style="flex: 1.5;">Nome</div>
+                <div style="flex: 1.5;">Cognome</div>
+                <div style="flex: 1.5;">Nascita</div>
+                <div style="flex: 2;">Ruolo</div>
+                <div style="flex: 1;">Mod</div>
+                <div style="flex: 1;">Canc</div>
             </div>
         """, unsafe_allow_html=True)
         
@@ -691,15 +687,15 @@ elif menu == "🏃 Anagrafica rosa":
                 nome_tab = parti_nome[0]
                 cognome_tab = parti_nome[1] if len(parti_nome) > 1 else ""
                 
-                col_info, col_btn_edit, col_btn_del = st.columns([6, 1, 1])
+                col_info, col_btn_edit, col_btn_del = st.columns([6.5, 1, 1])
                 with col_info:
                     # Su PC è una riga tabellare, su smartphone diventa una comoda Card
                     st.markdown(f"""
-                    <div class="mobile-card" style="display: flex; background-color: var(--secondary-background-color); padding: 10px; border: 1px solid rgba(128,128,128,0.3); border-radius: 5px; margin-bottom: 5px; align-items: center;">
-                        <div style="flex: 1;"><span class="mobile-label">Nome: </span>{nome_tab}</div>
-                        <div style="flex: 1;"><span class="mobile-label">Cognome: </span>{cognome_tab}</div>
-                        <div style="flex: 1;"><span class="mobile-label">Nascita: </span>{dob_str}</div>
-                        <div style="flex: 1;"><span class="mobile-label">Ruolo: </span>{ruolo_str}</div>
+                    <div class="desktop-row mobile-card" style="background-color: var(--secondary-background-color); padding: 10px; border: 1px solid rgba(128,128,128,0.3); border-radius: 5px; margin-bottom: 5px;">
+                        <div style="flex: 1.5;"><span class="mobile-label">Nome: </span>{nome_tab}</div>
+                        <div style="flex: 1.5;"><span class="mobile-label">Cognome: </span>{cognome_tab}</div>
+                        <div style="flex: 1.5;"><span class="mobile-label">Nascita: </span>{dob_str}</div>
+                        <div style="flex: 2.0;"><span class="mobile-label">Ruolo: </span>{ruolo_str}</div>
                     </div>
                     """, unsafe_allow_html=True)
                 with col_btn_edit:

@@ -760,18 +760,37 @@ elif menu == "📈 Statistiche Squadra":
                 
             data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
             
-            # --- MODIFICA: Creazione stringa "Squadra Casa vs Squadra Trasferta" ---
+            # --- Creazione stringa "Squadra Casa vs Squadra Trasferta" ---
             sq_casa = "USO UNITED" if ev.get("luogo", "Casa") == "Casa" else ev.get("avversario", "Avversario")
             sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED"
             stringa_partita = f"{sq_casa} vs {sq_trasf}"
             
             righe_partite += f"<tr><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{data_f}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{stringa_partita}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t1 if t1 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t2 if t2 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t3 if t3 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px; font-weight: bold;'>{p_uso_tot} - {p_avv_tot}</td></tr>"
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Gare Giocate", tot_partite)
-    col2.metric("V - P - S", f"{vittorie} - {pareggi} - {sconfitte}")
-    col3.metric("Gol Fatti", tot_gf)
-    col4.metric("Gol Subiti", tot_gs)
+    # --- NUOVO LAYOUT TABELLARE PER I TOTALI DI SQUADRA ---
+    riepilogo_html = f"""
+    <div style="overflow-x:auto; margin-bottom: 20px;">
+    <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 16px; background-color: var(--secondary-background-color); color: var(--text-color); border-radius: 10px; overflow: hidden; border: 1px solid rgba(128,128,128,0.3);">
+        <tr style="background-color: rgba(128,128,128,0.2); font-weight: bold;">
+            <td style="padding: 12px; border-bottom: 1px solid rgba(128,128,128,0.3);">Gare Giocate</td>
+            <td style="padding: 12px; border-bottom: 1px solid rgba(128,128,128,0.3);">Vittorie</td>
+            <td style="padding: 12px; border-bottom: 1px solid rgba(128,128,128,0.3);">Pareggi</td>
+            <td style="padding: 12px; border-bottom: 1px solid rgba(128,128,128,0.3);">Sconfitte</td>
+            <td style="padding: 12px; border-bottom: 1px solid rgba(128,128,128,0.3);">Gol Fatti</td>
+            <td style="padding: 12px; border-bottom: 1px solid rgba(128,128,128,0.3);">Gol Subiti</td>
+        </tr>
+        <tr>
+            <td style="padding: 15px; font-size: 24px; font-weight: bold;">{tot_partite}</td>
+            <td style="padding: 15px; font-size: 24px; font-weight: bold; color: #4CAF50;">{vittorie}</td>
+            <td style="padding: 15px; font-size: 24px; font-weight: bold; color: #FF9800;">{pareggi}</td>
+            <td style="padding: 15px; font-size: 24px; font-weight: bold; color: #F44336;">{sconfitte}</td>
+            <td style="padding: 15px; font-size: 24px; font-weight: bold; color: #4CAF50;">{tot_gf}</td>
+            <td style="padding: 15px; font-size: 24px; font-weight: bold; color: #F44336;">{tot_gs}</td>
+        </tr>
+    </table>
+    </div>
+    """
+    st.markdown(riepilogo_html, unsafe_allow_html=True)
     
     st.write("---")
     st.subheader("📝 Dettaglio Risultati Partite")

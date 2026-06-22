@@ -210,7 +210,7 @@ if menu == "🔵 Calendario Allenamenti":
                             st.session_state.edit_evento = ev["id"]
                             st.rerun()
                     with col_del:
-                        if st.button("🗑️").id:
+                        if st.button("🗑️ Elimina", key=f"del_ev_{ev['id']}"):
                             st.session_state.db["eventi"] = [e for e in st.session_state.db["eventi"] if e["id"] != ev["id"]]
                             if ev["id"] in st.session_state.db["storico_presenze"]: del st.session_state.db["storico_presenze"][ev["id"]]
                             if ev["id"] in st.session_state.db["storico_minutaggio"]: del st.session_state.db["storico_minutaggio"][ev["id"]]
@@ -411,7 +411,6 @@ elif menu == "🟢 Calendario e Convocazioni":
                     whatsapp_text += f"📍 *Ora Ritrovo:* {ev.get('ora_convocazione', '___')}\n"
                     whatsapp_text += f"🏟️ *Luogo:* {ind_campo}\n"
                     
-                    # Aggiunta dinamica delle Note se presenti
                     nota_p = ev.get("nota", "").strip()
                     if nota_p:
                         whatsapp_text += f"📝 *Note:*\n{nota_p}\n"
@@ -835,7 +834,7 @@ elif menu == "📈 Statistiche Squadra":
         st.caption("💡 *Il Risultato Finale (Punti Finali) è calcolato a tempi: 1 punto per tempo vinto, 1 per il pari, 0 persi. In caso di parità nei punti, decide la Differenza Reti globale della gara.*")
 
 # ==========================================
-# SCHERMATA 6: ANAGRAFICA ROSA
+# SCHERMATA 6: GESTIONE ROSA
 # ==========================================
 elif menu == "🏃 Anagrafica rosa":
     st.header("🏃 Anagrafica e Gestione Rosa")

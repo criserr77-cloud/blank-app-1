@@ -748,15 +748,28 @@ elif menu == "📈 Statistiche Squadra":
             p_uso_tot = pu1 + pu2 + pu3
             p_avv_tot = pa1 + pa2 + pa3
             
-            tot_gf += (gf1 + gf2 + gf3)
-            tot_gs += (gs1 + gs2 + gs3)
+            gf_partita = gf1 + gf2 + gf3
+            gs_partita = gs1 + gs2 + gs3
+            
+            tot_gf += gf_partita
+            tot_gs += gs_partita
+            
+            esito_tabella = f"{p_uso_tot} - {p_avv_tot}"
             
             if p_uso_tot > p_avv_tot:
                 vittorie += 1
-            elif p_uso_tot == p_avv_tot:
-                pareggi += 1
-            else:
+            elif p_uso_tot < p_avv_tot:
                 sconfitte += 1
+            else:
+                # In caso di parità nei punti, si valuta la differenza reti globale della gara
+                if gf_partita > gs_partita:
+                    vittorie += 1
+                    esito_tabella += " <br><span style='font-size:11px; font-weight:normal;'>(V per DR)</span>"
+                elif gf_partita < gs_partita:
+                    sconfitte += 1
+                    esito_tabella += " <br><span style='font-size:11px; font-weight:normal;'>(S per DR)</span>"
+                else:
+                    pareggi += 1
                 
             data_f = datetime.datetime.strptime(ev["data"], "%Y-%m-%d").strftime("%d/%m/%Y")
             
@@ -765,7 +778,7 @@ elif menu == "📈 Statistiche Squadra":
             sq_trasf = ev.get("avversario", "Avversario") if ev.get("luogo", "Casa") == "Casa" else "USO UNITED"
             stringa_partita = f"{sq_casa} vs {sq_trasf}"
             
-            righe_partite += f"<tr><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{data_f}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{stringa_partita}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t1 if t1 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t2 if t2 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t3 if t3 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px; font-weight: bold;'>{p_uso_tot} - {p_avv_tot}</td></tr>"
+            righe_partite += f"<tr><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{data_f}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{stringa_partita}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t1 if t1 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t2 if t2 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px;'>{t3 if t3 else '-'}</td><td style='border: 1px solid rgba(128,128,128,0.3); padding: 8px; font-weight: bold;'>{esito_tabella}</td></tr>"
 
     # --- NUOVO LAYOUT TABELLARE PER I TOTALI DI SQUADRA ---
     riepilogo_html = f"""
@@ -813,7 +826,7 @@ elif menu == "📈 Statistiche Squadra":
         </div>
         """
         st.markdown(tabella_html, unsafe_allow_html=True)
-        st.caption("💡 *Il Risultato Finale (Punti Finali) è calcolato a tempi: 1 punto per la vittoria del tempo, 1 punto a testa per il pareggio, 0 per la sconfitta.*")
+        st.caption("💡 *Il Risultato Finale (Punti Finali) è calcolato a tempi: 1 punto per tempo vinto, 1 per il pari, 0 persi. In caso di parità nei punti, decide la Differenza Reti globale della gara.*")
 
 # ==========================================
 # SCHERMATA 6: GESTIONE ROSA

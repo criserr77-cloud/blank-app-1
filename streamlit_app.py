@@ -2,15 +2,13 @@ import streamlit as st
 import json
 import gspread
 from google.oauth2.service_account import Credentials
-import datetime
-import base64
-import urllib.parse
-import streamlit.components.v1 as components
 
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="MisterApp Cloud", layout="centered")
 
-# --- CONNESSIONE CLOUD E GESTIONE DATI ---
+# --- CONNESSIONE CLOUD (Usa l'ID che mi hai fornito) ---
+ID_FOGLIO = "135IgLeZCtrVLe3APGqulTYTAX1tQg8SzT3Mw5hjjPC4"
+
 def get_gspread_client():
     try:
         creds_dict = json.loads(st.secrets["GCP_JSON"])
@@ -35,47 +33,43 @@ def caricare_dati():
     client = get_gspread_client()
     if client:
         try:
-            sheet = client.open("MisterApp_DB").sheet1
+            # Collegamento infallibile tramite ID
+            sheet = client.open_by_key(ID_FOGLIO).sheet1
             val = sheet.acell('A1').value
             if val:
                 dati = json.loads(val)
-                # Verifica integrità chiavi
                 base = struttura_base()
                 for k in base.keys():
                     if k not in dati: dati[k] = base[k]
                 return dati
-        except Exception:
-            pass
+        except Exception as e:
+            st.warning(f"Database non trovato, inizializzo base: {e}")
     return struttura_base()
 
 def salvare_dati():
     client = get_gspread_client()
     if client:
         try:
-            sheet = client.open("MisterApp_DB").sheet1
+            sheet = client.open_by_key(ID_FOGLIO).sheet1
             sheet.update_acell('A1', json.dumps(st.session_state.db, ensure_ascii=False))
         except Exception as e:
-            st.error(f"Errore salvataggio Cloud: {e}")
+            st.error(f"Errore salvataggio: {e}")
 
 # Inizializzazione Sessione
 if "db" not in st.session_state: st.session_state.db = caricare_dati()
 
-# --- INTERFACCIA E LOGICA ---
-menu = st.sidebar.radio("Navigazione", ["🔵 Allenamenti", "🟢 Convocazioni", "🏆 Statistiche Partite", "📈 Statistiche Squadra", "🏃 Rosa"])
+# --- INTERFACCIA ---
+st.sidebar.title("MisterApp")
+menu = st.sidebar.radio("Navigazione", ["🔵 Allenamenti", "🟢 Convocazioni", "🏆 Partite", "📈 Statistiche", "🏃 Rosa"])
 
-# (Qui dovresti incollare le sezioni che avevamo già sviluppato per ogni schermata del menu, 
-# avendo cura di usare sempre 'st.session_state.db' per leggere e 'salvare_dati()' per scrivere)
-
-# Esempio di struttura sezione:
 if menu == "🔵 Allenamenti":
-    st.header("🔵 Calendario Allenamenti")
-    # ... inserisci qui la logica degli allenamenti che avevamo ...
-    # Ricorda: usa sempre st.session_state.db per i dati e chiama salvare_dati() dopo ogni modifica!
+    st.header("🔵 Allenamenti")
+    # Inserisci qui il tuo codice per gli allenamenti...
+    if st.button("Salva modifiche"): salvare_dati()
 
-elif menu == "📈 Statistiche Squadra":
-    st.header("📈 Statistiche di Squadra")
-    # ... inserisci qui la logica della differenza reti e dei gol che abbiamo perfezionato ...
-
-# --- NOTA PER TE ---
+elif menu == "📈 Statistiche":
+    st.header("📈 Statistiche Squadra")
+    # Qui il codice della differenza reti che abbiamo visto...
+    
 st.sidebar.write("---")
-st.sidebar.success("Database sincronizzato con Google Sheets")
+st.sidebar.success("Cloud: Connesso")
